@@ -1,0 +1,1574 @@
+{
+    "Tutorial_01": [
+        "King's_Pass",
+        null
+    ],
+    "Town": [
+        "Dirtmouth",
+        null
+    ],
+    "Room_shop": [
+        "Sly",
+        "shop"
+    ],
+    "Room_Sly_Storeroom": [
+        "Sly_Basement",
+        "shop"
+    ],
+    "Room_Town_Stag_Station": [
+        "Dirtmouth_Stag",
+        "stag"
+    ],
+    "Room_mapper": [
+        "Iselda",
+        "shop"
+    ],
+    "Room_Bretta": [
+        "Bretta",
+        null
+    ],
+    "Room_Bretta_Basement": [
+        "Bretta_Basement",
+        null
+    ],
+    "Room_Ouiji": [
+        "Jiji",
+        "shop"
+    ],
+    "Room_Jinn": [
+        "Jinn",
+        "shop"
+    ],
+    "Room_Tram_RG": [
+        "Upper_Tram",
+        "bench"
+    ],
+    "Room_Tram": [
+        "Lower_Tram",
+        "bench"
+    ],
+    "Room_Charm_Shop": [
+        "Salubra",
+        "shop"
+    ],
+    "Room_temple": [
+        "Black_Egg_Temple",
+        null
+    ],
+    "Crossroads_01": [
+        "Crossroads_Well",
+        null
+    ],
+    "Crossroads_02": [
+        "Crossroads_Outside_Temple",
+        null
+    ],
+    "Crossroads_03": [
+        "Crossroads_Outside_Stag",
+        null
+    ],
+    "Crossroads_04": [
+        "Crossroads_Gruz_Mother",
+        null
+    ],
+    "Crossroads_05": [
+        "Crossroads_Central_Grub",
+        null
+    ],
+    "Crossroads_06": [
+        "Crossroads_Outside_Mound",
+        null
+    ],
+    "Crossroads_07": [
+        "Crossroads_Gruzzer",
+        null
+    ],
+    "Crossroads_08": [
+        "Crossroads_Aspid_Arena",
+        null
+    ],
+    "Crossroads_09": [
+        "Crossroads_Mawlek_Boss",
+        null
+    ],
+    "Crossroads_10": [
+        "Crossroads_False_Knight_Arena",
+        null
+    ],
+    "Crossroads_11_alt": [
+        "Crossroads_Greenpath_Entrance",
+        null
+    ],
+    "Crossroads_12": [
+        "Crossroads_Corridor_to_Acid_Grub",
+        null
+    ],
+    "Crossroads_13": [
+        "Crossroads_Goam_Mask_Shard",
+        null
+    ],
+    "Crossroads_14": [
+        "Crossroads_Outside_Myla",
+        null
+    ],
+    "Crossroads_15": [
+        "Crossroads_Corridor_to_Tram",
+        null
+    ],
+    "Crossroads_16": [
+        "Crossroads_Above_Lever",
+        null
+    ],
+    "Crossroads_18": [
+        "Crossroads_Fungal_Entrance",
+        null
+    ],
+    "Crossroads_19": [
+        "Crossroads_Before_Gruz_Mother",
+        null
+    ],
+    "Crossroads_21": [
+        "Crossroads_Outside_False_Knight",
+        null
+    ],
+    "Crossroads_22": [
+        "Crossroads_Glowing_Womb_Arena",
+        null
+    ],
+    "Crossroads_25": [
+        "Crossroads_Mawlek_Entrance",
+        null
+    ],
+    "Crossroads_27": [
+        "Crossroads_Outside_Tram",
+        null
+    ],
+    "Crossroads_30": [
+        "Crossroads_Hot_Spring",
+        "bench"
+    ],
+    "Crossroads_31": [
+        "Crossroads_Spike_Grub",
+        null
+    ],
+    "Crossroads_33": [
+        "Crossroads_Cornifer",
+        null
+    ],
+    "Crossroads_35": [
+        "Crossroads_Acid_Grub",
+        null
+    ],
+    "Crossroads_36": [
+        "Crossroads_Mawlek_Middle",
+        null
+    ],
+    "Crossroads_37": [
+        "Crossroads_Vessel_Fragment",
+        null
+    ],
+    "Crossroads_38": [
+        "Crossroads_Grubfather",
+        null
+    ],
+    "Crossroads_39": [
+        "Crossroads_Corridor_Right_of_Temple",
+        null
+    ],
+    "Crossroads_40": [
+        "Crossroads_Corridor_Right_of_Central_Grub",
+        null
+    ],
+    "Crossroads_42": [
+        "Crossroads_Right_Of_Mask_Shard",
+        null
+    ],
+    "Crossroads_43": [
+        "Crossroads_Corridor_to_Elevator",
+        null
+    ],
+    "Crossroads_45": [
+        "Crossroads_Myla",
+        null
+    ],
+    "Crossroads_46": [
+        "Crossroads_Tram",
+        null
+    ],
+    "Crossroads_47": [
+        "Crossroads_Stag",
+        "stag"
+    ],
+    "Crossroads_48": [
+        "Crossroads_Guarded_Grub",
+        null
+    ],
+    "Crossroads_49": [
+        "Crossroads_Elevator",
+        null
+    ],
+    "Crossroads_52": [
+        "Crossroads_Goam_Journal",
+        null
+    ],
+    "Crossroads_ShamanTemple": [
+        "Crossroads_Ancestral_Mound",
+        "bench"
+    ],
+    "Room_Mender_House": [
+        "Crossroads_Menderbug",
+        null
+    ],
+    "Room_ruinhouse": [
+        "Crossroads_Rescue_Sly",
+        null
+    ],
+    "Fungus1_01": [
+        "Greenpath_Entrance",
+        null
+    ],
+    "Fungus1_01b": [
+        "Greenpath_Waterfall_Bench",
+        "bench"
+    ],
+    "Fungus1_02": [
+        "Greenpath_First_Hornet_Sighting",
+        null
+    ],
+    "Fungus1_03": [
+        "Greenpath_Storerooms",
+        null
+    ],
+    "Fungus1_04": [
+        "Greenpath_Hornet",
+        null
+    ],
+    "Fungus1_05": [
+        "Greenpath_Outside_Thorns",
+        null
+    ],
+    "Fungus1_06": [
+        "Greenpath_Cornifer",
+        null
+    ],
+    "Fungus1_07": [
+        "Greenpath_Outside_Hunter",
+        null
+    ],
+    "Fungus1_08": [
+        "Greenpath_Hunter",
+        null
+    ],
+    "Fungus1_09": [
+        "Greenpath_Sheo_Gauntlet",
+        null
+    ],
+    "Fungus1_10": [
+        "Greenpath_Acid_Bridge",
+        null
+    ],
+    "Fungus1_11": [
+        "Greenpath_Above_Fog_Canyon",
+        null
+    ],
+    "Fungus1_12": [
+        "Greenpath_MMC_Corridor",
+        null
+    ],
+    "Fungus1_13": [
+        "Greenpath_Whispering_Root",
+        null
+    ],
+    "Fungus1_14": [
+        "Greenpath_Thorns_of_Agony",
+        null
+    ],
+    "Fungus1_15": [
+        "Greenpath_Outside_Sheo",
+        "bench"
+    ],
+    "Fungus1_16_alt": [
+        "Greenpath_Stag",
+        "stag"
+    ],
+    "Fungus1_17": [
+        "Greenpath_Charger_Corridor",
+        null
+    ],
+    "Fungus1_19": [
+        "Greenpath_Above_Sanctuary_Bench",
+        null
+    ],
+    "Fungus1_20_v02": [
+        "Greenpath_Vengefly_King",
+        null
+    ],
+    "Fungus1_21": [
+        "Greenpath_Outside_Hornet",
+        null
+    ],
+    "Fungus1_22": [
+        "Greenpath_Outside_Stag",
+        null
+    ],
+    "Fungus1_25": [
+        "Greenpath_Corridor_to_Unn",
+        null
+    ],
+    "Fungus1_26": [
+        "Greenpath_Lake_Of_Unn",
+        null
+    ],
+    "Fungus1_29": [
+        "Greenpath_Massive_Moss_Charger",
+        null
+    ],
+    "Fungus1_30": [
+        "Greenpath_Below_Toll_Bench",
+        null
+    ],
+    "Fungus1_31": [
+        "Greenpath_Toll",
+        "bench"
+    ],
+    "Fungus1_32": [
+        "Greenpath_Moss_Knight_Arena",
+        null
+    ],
+    "Fungus1_34": [
+        "Greenpath_Stone_Sanctuary_Entrance",
+        null
+    ],
+    "Fungus1_35": [
+        "Greenpath_Stone_Sanctuary",
+        null
+    ],
+    "Fungus1_36": [
+        "Greenpath_Stone_Sanctuary_Mask_Shard",
+        null
+    ],
+    "Fungus1_37": [
+        "Greenpath_Sanctuary_Bench",
+        "bench"
+    ],
+    "Fungus1_Slug": [
+        "Greenpath_Unn",
+        null
+    ],
+    "Room_nailmaster_02": [
+        "Greenpath_Sheo",
+        null
+    ],
+    "Room_Slug_Shrine": [
+        "Greenpath_Unn_Bench",
+        "bench"
+    ],
+    "Deepnest_01": [
+        "Fungal_Deepnest_Fall",
+        null
+    ],
+    "Fungus2_01": [
+        "Fungal_Queen's_Station",
+        null
+    ],
+    "Fungus2_02": [
+        "Fungal_Queen's_Stag",
+        "stag"
+    ],
+    "Fungus2_03": [
+        "Fungal_Outside_Queen's",
+        null
+    ],
+    "Fungus2_04": [
+        "Fungal_Below_Ogres",
+        null
+    ],
+    "Fungus2_05": [
+        "Fungal_Shrumal_Ogres",
+        null
+    ],
+    "Fungus2_06": [
+        "Fungal_Outside_Leg_Eater",
+        null
+    ],
+    "Fungus2_07": [
+        "Fungal_Shrumal_Warrior_Acid_Bridge",
+        null
+    ],
+    "Fungus2_08": [
+        "Fungal_Outside_Elder_Hu",
+        null
+    ],
+    "Fungus2_09": [
+        "Fungal_Cloth_Corridor",
+        null
+    ],
+    "Fungus2_10": [
+        "Fungal_Left_Of_Pilgrim's_Way",
+        null
+    ],
+    "Fungus2_11": [
+        "Fungal_Epogo",
+        null
+    ],
+    "Fungus2_12": [
+        "Fungal_Mantis_Corridor",
+        null
+    ],
+    "Fungus2_13": [
+        "Fungal_Bretta_Bench",
+        "bench"
+    ],
+    "Fungus2_14": [
+        "Fungal_Mantis_Village",
+        null
+    ],
+    "Fungus2_15": [
+        "Fungal_Mantis_Lords",
+        null
+    ],
+    "Fungus2_17": [
+        "Fungal_Above_Mantis_Village",
+        null
+    ],
+    "Fungus2_18": [
+        "Fungal_Cornifer",
+        null
+    ],
+    "Fungus2_19": [
+        "Fungal_Right_Of_Spore_Shroom",
+        null
+    ],
+    "Fungus2_20": [
+        "Fungal_Spore_Shroom",
+        null
+    ],
+    "Fungus2_21": [
+        "Fungal_Pilgrim's_Way",
+        null
+    ],
+    "Fungus2_23": [
+        "Fungal_Dashmaster",
+        null
+    ],
+    "Fungus2_26": [
+        "Fungal_Leg_Eater",
+        "shop"
+    ],
+    "Fungus2_28": [
+        "Fungal_Shrumal_Warrior_Loop",
+        null
+    ],
+    "Fungus2_29": [
+        "Fungal_Core_Upper",
+        null
+    ],
+    "Fungus2_30": [
+        "Fungal_Core_Lower",
+        null
+    ],
+    "Fungus2_31": [
+        "Fungal_Mantis_Rewards",
+        "bench"
+    ],
+    "Fungus2_32": [
+        "Fungal_Elder_Hu",
+        null
+    ],
+    "Fungus2_33": [
+        "Fungal_Leg_Eater_Root",
+        null
+    ],
+    "Fungus2_34": [
+        "Fungal_Willoh",
+        null
+    ],
+    "Fungus3_01": [
+        "Fog_Upper_West_Tall",
+        null
+    ],
+    "Fungus3_02": [
+        "Fog_Lower_West_Tall",
+        null
+    ],
+    "Fungus3_03": [
+        "Fog_Queen's_Gardens_Acid_Entrance",
+        null
+    ],
+    "Fungus3_24": [
+        "Fog_Corridor_to_Overgrown_Mound",
+        null
+    ],
+    "Fungus3_25": [
+        "Fog_Cornifer",
+        null
+    ],
+    "Fungus3_25b": [
+        "Fog_Corridor_to_Cornifer",
+        null
+    ],
+    "Fungus3_26": [
+        "Fog_East_Tall",
+        null
+    ],
+    "Fungus3_27": [
+        "Fog_Corridor_to_Archives",
+        null
+    ],
+    "Fungus3_28": [
+        "Fog_Charm_Notch",
+        null
+    ],
+    "Fungus3_30": [
+        "Fog_Lifeblood",
+        null
+    ],
+    "Fungus3_35": [
+        "Fog_Millibelle",
+        null
+    ],
+    "Fungus3_44": [
+        "Fog_Overgrown_Mound_Entrance",
+        null
+    ],
+    "Fungus3_47": [
+        "Fog_Archives_Entrance",
+        null
+    ],
+    "Fungus3_archive": [
+        "Fog_Archives_Bench",
+        "bench"
+    ],
+    "Fungus3_archive_02": [
+        "Fog_Uumuu_Arena",
+        null
+    ],
+    "Room_Fungus_Shaman": [
+        "Fog_Overgrown_Mound",
+        null
+    ],
+    "Cliffs_01": [
+        "Cliffs_Main",
+        null
+    ],
+    "Cliffs_02": [
+        "Cliffs_Gorb",
+        null
+    ],
+    "Cliffs_03": [
+        "Cliffs_Stag_Nest",
+        "stag"
+    ],
+    "Cliffs_04": [
+        "Cliffs_Joni's_Dark",
+        null
+    ],
+    "Cliffs_05": [
+        "Cliffs_Joni's_Pickup",
+        null
+    ],
+    "Cliffs_06": [
+        "Cliffs_Grimm_Lantern",
+        null
+    ],
+    "Fungus1_28": [
+        "Cliffs_Baldur's_Shell",
+        null
+    ],
+    "Room_nailmaster": [
+        "Cliffs_Mato",
+        "bench"
+    ],
+    "Mines_01": [
+        "Crystal_Dive_Entrance",
+        null
+    ],
+    "Mines_02": [
+        "Crystal_Main_Entrance",
+        null
+    ],
+    "Mines_03": [
+        "Crystal_Spike_Grub",
+        null
+    ],
+    "Mines_04": [
+        "Crystal_Entrance_Conveyors",
+        null
+    ],
+    "Mines_05": [
+        "Crystal_Above_Spike_Grub",
+        null
+    ],
+    "Mines_06": [
+        "Crystal_Deep_Focus_Gauntlet",
+        null
+    ],
+    "Mines_07": [
+        "Crystal_Dark_Room",
+        null
+    ],
+    "Mines_10": [
+        "Crystal_Elevator_Entrance",
+        null
+    ],
+    "Mines_11": [
+        "Crystal_Left_Of_Guardian",
+        null
+    ],
+    "Mines_13": [
+        "Crystal_Top_Corridor",
+        null
+    ],
+    "Mines_16": [
+        "Crystal_Mimic",
+        null
+    ],
+    "Mines_17": [
+        "Crystal_Corridor_to_Spike_Grub",
+        null
+    ],
+    "Mines_18": [
+        "Crystal_Guardian_Bench",
+        "bench"
+    ],
+    "Mines_19": [
+        "Crystal_Grub_Crushers",
+        null
+    ],
+    "Mines_20": [
+        "Crystal_East_Tall",
+        null
+    ],
+    "Mines_23": [
+        "Crystal_Crown_Whispering_Root",
+        null
+    ],
+    "Mines_24": [
+        "Crystal_Crown_Grub",
+        null
+    ],
+    "Mines_25": [
+        "Crystal_Crown_Climb",
+        null
+    ],
+    "Mines_28": [
+        "Crystal_Outside_Mound",
+        null
+    ],
+    "Mines_29": [
+        "Crystal_Dark_Bench",
+        "bench"
+    ],
+    "Mines_30": [
+        "Crystal_Cornifer",
+        null
+    ],
+    "Mines_31": [
+        "Crystal_Crystal_Heart_Gauntlet",
+        null
+    ],
+    "Mines_32": [
+        "Crystal_Enraged_Guardian_Arena",
+        null
+    ],
+    "Mines_33": [
+        "Crossroads_Peak_Dark_Toll",
+        null
+    ],
+    "Mines_34": [
+        "Crystal_Crown_Peak",
+        null
+    ],
+    "Mines_35": [
+        "Crystal_Mound",
+        null
+    ],
+    "Mines_36": [
+        "Crystal_Deep_Focus",
+        null
+    ],
+    "Mines_37": [
+        "Crystal_Chest_Crushers",
+        null
+    ],
+    "Abyss_02": [
+        "Basin_Broken_Bridge",
+        null
+    ],
+    "Abyss_03": [
+        "Basin_Tram",
+        null
+    ],
+    "Abyss_04": [
+        "Basin_Fountain",
+        null
+    ],
+    "Abyss_05": [
+        "Basin_Palace_Grounds",
+        null
+    ],
+    "Abyss_17": [
+        "Basin_Cloth",
+        null
+    ],
+    "Abyss_18": [
+        "Basin_Corridor_to_Broken_Vessel",
+        "bench"
+    ],
+    "Abyss_19": [
+        "Basin_Broken_Vessel_Grub",
+        null
+    ],
+    "Abyss_20": [
+        "Basin_Simple_Key",
+        null
+    ],
+    "Abyss_21": [
+        "Basin_Monarch_Wings",
+        null
+    ],
+    "Abyss_22": [
+        "Basin_Hidden_Station",
+        "stag"
+    ],
+    "Abyss_06_Core": [
+        "Abyss_Core",
+        null
+    ],
+    "Abyss_08": [
+        "Abyss_Lifeblood_Core",
+        null
+    ],
+    "Abyss_09": [
+        "Abyss_Lighthouse_Climb",
+        null
+    ],
+    "Abyss_10": [
+        "Abyss_Shade_Cloak",
+        null
+    ],
+    "Abyss_12": [
+        "Abyss_Shriek",
+        null
+    ],
+    "Abyss_15": [
+        "Abyss_Birthplace",
+        null
+    ],
+    "Abyss_16": [
+        "Abyss_Corridor_to_Lighthouse",
+        null
+    ],
+    "Abyss_Lighthouse_room": [
+        "Abyss_Lighthouse",
+        null
+    ],
+    "Crossroads_46b": [
+        "Grounds_Tram",
+        null
+    ],
+    "Crossroads_50": [
+        "Grounds_Blue_Lake",
+        null
+    ],
+    "RestingGrounds_02": [
+        "Grounds_Xero",
+        null
+    ],
+    "RestingGrounds_04": [
+        "Grounds_Dream_Nail_Entrance",
+        null
+    ],
+    "RestingGrounds_05": [
+        "Grounds_Whispering_Root",
+        null
+    ],
+    "RestingGrounds_06": [
+        "Grounds_Corridor_Below_Xero",
+        null
+    ],
+    "RestingGrounds_07": [
+        "Grounds_Seer",
+        "shop"
+    ],
+    "RestingGrounds_08": [
+        "Grounds_Spirit's_Glade",
+        null
+    ],
+    "RestingGrounds_09": [
+        "Grounds_Stag",
+        "stag"
+    ],
+    "RestingGrounds_10": [
+        "Grounds_Crypts",
+        null
+    ],
+    "RestingGrounds_12": [
+        "Grounds_Outside_Grey_Mourner",
+        "bench"
+    ],
+    "RestingGrounds_17": [
+        "Grounds_Dreamshield",
+        null
+    ],
+    "Room_Mansion": [
+        "Grounds_Grey_Mourner",
+        null
+    ],
+    "Ruins2_10": [
+        "Grounds_Elevator",
+        null
+    ],
+    "Abyss_03_c": [
+        "Edge_Tram",
+        null
+    ],
+    "Deepnest_East_01": [
+        "Edge_Left_Of_Hive",
+        null
+    ],
+    "Deepnest_East_02": [
+        "Edge_Above_Hive",
+        null
+    ],
+    "Deepnest_East_03": [
+        "Edge_Entrance",
+        null
+    ],
+    "Deepnest_East_04": [
+        "Edge_Bardoon",
+        null
+    ],
+    "Deepnest_East_06": [
+        "Edge_Outside_Oro",
+        "bench"
+    ],
+    "Deepnest_East_07": [
+        "Edge_Whispering_Root",
+        null
+    ],
+    "Deepnest_East_08": [
+        "Edge_Great_Hopper_Idol",
+        null
+    ],
+    "Deepnest_East_09": [
+        "Edge_Corridor_Outside_Colosseum",
+        null
+    ],
+    "Deepnest_East_10": [
+        "Edge_Markoth_Arena",
+        null
+    ],
+    "Deepnest_East_11": [
+        "Edge_Below_Camp_Bench",
+        null
+    ],
+    "Deepnest_East_12": [
+        "Edge_Hornet_Sentinel_Corridor",
+        null
+    ],
+    "Deepnest_East_13": [
+        "Edge_Camp_Bench",
+        "bench"
+    ],
+    "Deepnest_East_14": [
+        "Edge_Below_Oro",
+        null
+    ],
+    "Deepnest_East_14b": [
+        "Edge_Quick_Slash",
+        null
+    ],
+    "Deepnest_East_15": [
+        "Edge_Lifeblood",
+        null
+    ],
+    "Deepnest_East_16": [
+        "Edge_Oro_Scarecrow",
+        null
+    ],
+    "Deepnest_East_17": [
+        "Edge_420_Geo_Rock",
+        null
+    ],
+    "Deepnest_East_18": [
+        "Edge_Outside_Markoth",
+        null
+    ],
+    "Deepnest_East_Hornet": [
+        "Edge_Hornet_Sentinel_Arena",
+        null
+    ],
+    "GG_Lurker": [
+        "Edge_Pale_Lurker",
+        null
+    ],
+    "Room_Colosseum_01": [
+        "Edge_Colo_Entrance",
+        null
+    ],
+    "Room_Colosseum_02": [
+        "Edge_Colo_Bench",
+        "bench"
+    ],
+    "Room_Colosseum_Bronze": [
+        "Edge_Colo_1_Arena",
+        null
+    ],
+    "Room_Colosseum_Gold": [
+        "Edge_Colo_3_Arena",
+        null
+    ],
+    "Room_Colosseum_Silver": [
+        "Edge_Colo_2_Arena",
+        null
+    ],
+    "Room_Colosseum_Spectate": [
+        "Edge_Colo_Spectate",
+        null
+    ],
+    "Room_nailmaster_03": [
+        "Edge_Oro",
+        null
+    ],
+    "Room_Wyrm": [
+        "Edge_Cast-Off_Shell",
+        null
+    ],
+    "Abyss_01": [
+        "City_Broken_Elevator",
+        null
+    ],
+    "Crossroads_49b": [
+        "City_Left_Elevator",
+        null
+    ],
+    "Room_nailsmith": [
+        "City_Nailsmith",
+        "shop"
+    ],
+    "Ruins_Bathhouse": [
+        "City_Pleasure_House_Bench",
+        null
+    ],
+    "Ruins_Elevator": [
+        "City_Pleasure_House_Elevator",
+        null
+    ],
+    "Ruins_House_01": [
+        "City_Guarded_Grub",
+        null
+    ],
+    "Ruins_House_02": [
+        "City_Gorgeous_Husk",
+        null
+    ],
+    "Ruins_House_03": [
+        "City_Emilitia",
+        null
+    ],
+    "Ruins1_01": [
+        "City_Pilgrim's_Entrance",
+        null
+    ],
+    "Ruins1_02": [
+        "City_Quirrel_Bench",
+        "bench"
+    ],
+    "Ruins1_03": [
+        "City_Rafters",
+        null
+    ],
+    "Ruins1_04": [
+        "City_Outside_Nailsmith",
+        null
+    ],
+    "Ruins1_05": [
+        "City_Grub_Above_Lemm",
+        null
+    ],
+    "Ruins1_05b": [
+        "City_Lemm",
+        "shop"
+    ],
+    "Ruins1_05c": [
+        "City_Egg_Above_Lemm",
+        null
+    ],
+    "Ruins1_06": [
+        "City_Corridor_to_Storerooms",
+        null
+    ],
+    "Ruins1_09": [
+        "City_Soul_Twister_Arena",
+        null
+    ],
+    "Ruins1_17": [
+        "City_Whispering_Root",
+        null
+    ],
+    "Ruins1_18": [
+        "City_Corridor_to_Spire",
+        null
+    ],
+    "Ruins1_23": [
+        "City_Sanctum_Entrance",
+        null
+    ],
+    "Ruins1_24": [
+        "City_Soul_Master_Arena",
+        null
+    ],
+    "Ruins1_25": [
+        "City_Sanctum_East_Elevators",
+        null
+    ],
+    "Ruins1_27": [
+        "City_Hollow_Knight_Fountain",
+        null
+    ],
+    "Ruins1_28": [
+        "City_Storerooms",
+        null
+    ],
+    "Ruins1_29": [
+        "City_Storerooms_Stag",
+        "stag"
+    ],
+    "Ruins1_30": [
+        "City_Sanctum_Spell_Twister",
+        null
+    ],
+    "Ruins1_31": [
+        "City_Toll_Bench",
+        "bench"
+    ],
+    "Ruins1_31b": [
+        "City_Shade_Soul_Arena",
+        null
+    ],
+    "Ruins1_32": [
+        "City_Soul_Master_Rewards",
+        null
+    ],
+    "Ruins2_01": [
+        "City_Spire_Great_Husk",
+        null
+    ],
+    "Ruins2_01_b": [
+        "City_Spire_Base",
+        null
+    ],
+    "Ruins2_03": [
+        "City_Spire_Watchers",
+        null
+    ],
+    "Ruins2_03b": [
+        "City_Spire_Below_Watchers",
+        null
+    ],
+    "Ruins2_04": [
+        "City_Right_Hub",
+        null
+    ],
+    "Ruins2_05": [
+        "City_Above_King's",
+        null
+    ],
+    "Ruins2_06": [
+        "City_King's_Station",
+        null
+    ],
+    "Ruins2_07": [
+        "City_Grub_Below_King's",
+        null
+    ],
+    "Ruins2_08": [
+        "City_King's_Stag",
+        "stag"
+    ],
+    "Ruins2_09": [
+        "City_King's_Vessel_Fragment",
+        null
+    ],
+    "Ruins2_10b": [
+        "City_Right_Elevator",
+        null
+    ],
+    "Ruins2_11": [
+        "City_Collector_Arena",
+        null
+    ],
+    "Ruins2_11_b": [
+        "City_Tower_of_Love",
+        null
+    ],
+    "Ruins2_Watcher_Room": [
+        "City_Lurien_Elevator",
+        null
+    ],
+    "Hive_01": [
+        "Hive_Entrance",
+        "bench"
+    ],
+    "Hive_02": [
+        "Hive_Whispering_Root",
+        null
+    ],
+    "Hive_03": [
+        "Hive_Outside_Grub",
+        null
+    ],
+    "Hive_03_c": [
+        "Hive_Outside_Shortcut",
+        null
+    ],
+    "Hive_04": [
+        "Hive_Mask_Shard",
+        null
+    ],
+    "Hive_05": [
+        "Hive_Knight_Arena",
+        null
+    ],
+    "GG_Pipeway": [
+        "Waterways_Flukemunga_Corridor",
+        null
+    ],
+    "GG_Waterways": [
+        "Waterways_Junk_Pit",
+        null
+    ],
+    "Room_GG_Shortcut": [
+        "Waterways_Fluke_Hermit",
+        null
+    ],
+    "Waterways_01": [
+        "Waterways_Entrance",
+        null
+    ],
+    "Waterways_02": [
+        "Waterways_Main_Bench",
+        "bench"
+    ],
+    "Waterways_03": [
+        "Waterways_Tuk",
+        "shop"
+    ],
+    "Waterways_04": [
+        "Waterways_Hidden_Grub",
+        null
+    ],
+    "Waterways_04b": [
+        "Waterways_Mask_Shard",
+        null
+    ],
+    "Waterways_05": [
+        "Waterways_Dung_Defender_Arena",
+        null
+    ],
+    "Waterways_06": [
+        "Waterways_Corridor_to_Broken_Elevator",
+        null
+    ],
+    "Waterways_07": [
+        "Waterways_Left_Of_Isma's_Grove",
+        null
+    ],
+    "Waterways_08": [
+        "Waterways_Outside_Flukemarm",
+        null
+    ],
+    "Waterways_09": [
+        "Waterways_Cornifer",
+        null
+    ],
+    "Waterways_12": [
+        "Waterways_Flukemarm_Arena",
+        null
+    ],
+    "Waterways_13": [
+        "Waterways_Isma's_Grove",
+        null
+    ],
+    "Waterways_14": [
+        "Waterways_Edge_Acid_Corridor",
+        null
+    ],
+    "Waterways_15": [
+        "Waterways_Dung_Defender's_Cave",
+        null
+    ],
+    "Abyss_03_b": [
+        "Deepnest_Tram",
+        null
+    ],
+    "Deepnest_01b": [
+        "Deepnest_Upper_Cornifer",
+        null
+    ],
+    "Deepnest_02": [
+        "Deepnest_Outside_Mimics",
+        null
+    ],
+    "Deepnest_03": [
+        "Deepnest_Left_Of_Hot_Spring",
+        null
+    ],
+    "Deepnest_09": [
+        "Deepnest_Distant_Village_Stag",
+        "stag"
+    ],
+    "Deepnest_10": [
+        "Deepnest_Distant_Village",
+        null
+    ],
+    "Deepnest_14": [
+        "Deepnest_Failed_Tramway_Bench",
+        "bench"
+    ],
+    "Deepnest_16": [
+        "Deepnest_After_Lower_Cornifer",
+        null
+    ],
+    "Deepnest_17": [
+        "Deepnest_Garpede_Corridor_Below_Cornifer",
+        null
+    ],
+    "Deepnest_26": [
+        "Deepnest_Failed_Tramway_Lifeblood",
+        null
+    ],
+    "Deepnest_26b": [
+        "Deepnest_Tram_Pass",
+        null
+    ],
+    "Deepnest_30": [
+        "Deepnest_Hot_Spring",
+        "bench"
+    ],
+    "Deepnest_31": [
+        "Deepnest_Nosk_Corridor",
+        null
+    ],
+    "Deepnest_32": [
+        "Deepnest_Nosk_Arena",
+        null
+    ],
+    "Deepnest_33": [
+        "Deepnest_Zote_Arena",
+        null
+    ],
+    "Deepnest_34": [
+        "Deepnest_First_Devout",
+        null
+    ],
+    "Deepnest_35": [
+        "Deepnest_Outside_Galien",
+        null
+    ],
+    "Deepnest_36": [
+        "Deepnest_Mimics",
+        null
+    ],
+    "Deepnest_37": [
+        "Deepnest_Corridor_to_Tram",
+        null
+    ],
+    "Deepnest_38": [
+        "Deepnest_Vessel_Fragment",
+        null
+    ],
+    "Deepnest_39": [
+        "Deepnest_Whispering_Root",
+        null
+    ],
+    "Deepnest_40": [
+        "Deepnest_Galien_Arena",
+        null
+    ],
+    "Deepnest_41": [
+        "Deepnest_Midwife",
+        null
+    ],
+    "Deepnest_42": [
+        "Deepnest_Outside_Mask_Maker",
+        null
+    ],
+    "Deepnest_44": [
+        "Deepnest_Sharp_Shadow",
+        null
+    ],
+    "Deepnest_45_v02": [
+        "Deepnest_Weaver's_Den",
+        null
+    ],
+    "Deepnest_Spider_Town": [
+        "Deepnest_Beast's_Den",
+        "bench"
+    ],
+    "Fungus2_25": [
+        "Deepnest_Lower_Cornifer",
+        null
+    ],
+    "Room_Mask_Maker": [
+        "Deepnest_Mask_Maker",
+        null
+    ],
+    "Room_spider_small": [
+        "Deepnest_Brumm",
+        null
+    ],
+    "Deepnest_43": [
+        "Gardens_Corridor_To_Deepnest",
+        null
+    ],
+    "Fungus1_23": [
+        "Gardens_First_Loodle_Corridor",
+        null
+    ],
+    "Fungus1_24": [
+        "Gardens_Cornifer",
+        "bench"
+    ],
+    "Fungus3_04": [
+        "Gardens_Before_Petra_Arena",
+        null
+    ],
+    "Fungus3_05": [
+        "Gardens_Petra_Arena",
+        null
+    ],
+    "Fungus3_08": [
+        "Gardens_Lower_Petra_Corridor",
+        null
+    ],
+    "Fungus3_10": [
+        "Gardens_Main_Arena",
+        null
+    ],
+    "Fungus3_11": [
+        "Gardens_Whispering_Root",
+        null
+    ],
+    "Fungus3_13": [
+        "Gardens_Outside_Stag",
+        null
+    ],
+    "Fungus3_21": [
+        "Gardens_Corridor_to_Traitor_Lord",
+        null
+    ],
+    "Fungus3_22": [
+        "Gardens_Upper_Grub",
+        null
+    ],
+    "Fungus3_23": [
+        "Gardens_Traitor_Lord_Arena",
+        null
+    ],
+    "Fungus3_34": [
+        "Gardens_Entrance",
+        null
+    ],
+    "Fungus3_39": [
+        "Gardens_Moss_Prophet",
+        null
+    ],
+    "Fungus3_49": [
+        "Gardens_Traitor's_Child's_Grave",
+        null
+    ],
+    "Fungus3_40": [
+        "Gardens_Gardens_Stag",
+        "stag"
+    ],
+    "Fungus3_48": [
+        "Gardens_Outside_White_Lady",
+        null
+    ],
+    "Fungus3_50": [
+        "Gardens_Toll_Bench",
+        "bench"
+    ],
+    "Room_Queen": [
+        "Gardens_White_Lady",
+        null
+    ],
+    "White_Palace_01": [
+        "Palace_Entrance",
+        "bench"
+    ],
+    "White_Palace_02": [
+        "Palace_First_Mold",
+        null
+    ],
+    "White_Palace_03_hub": [
+        "Palace_Hub",
+        "bench"
+    ],
+    "White_Palace_04": [
+        "Palace_Left_Of_Hub",
+        null
+    ],
+    "White_Palace_05": [
+        "Palace_Saw_Room",
+        null
+    ],
+    "White_Palace_06": [
+        "Palace_Balcony",
+        "bench"
+    ],
+    "White_Palace_07": [
+        "Palace_Lamp_Pogo",
+        null
+    ],
+    "White_Palace_08": [
+        "Palace_Workshop",
+        null
+    ],
+    "White_Palace_09": [
+        "Palace_Throne",
+        null
+    ],
+    "White_Palace_11": [
+        "Palace_Outside",
+        null
+    ],
+    "White_Palace_12": [
+        "Palace_Spike_Drop",
+        null
+    ],
+    "White_Palace_13": [
+        "Palace_Thorn_Jump",
+        null
+    ],
+    "White_Palace_14": [
+        "Palace_Hell_Corridor",
+        null
+    ],
+    "White_Palace_15": [
+        "Palace_Caged_Lever",
+        null
+    ],
+    "White_Palace_16": [
+        "Palace_Saw_Climb",
+        null
+    ],
+    "White_Palace_17": [
+        "POP_Lever",
+        null
+    ],
+    "White_Palace_18": [
+        "POP_Entrance",
+        null
+    ],
+    "White_Palace_19": [
+        "POP_Vertical",
+        null
+    ],
+    "White_Palace_20": [
+        "POP_Final",
+        null
+    ],
+    "Dream_Final": [
+        "Egg_Radiance",
+        null
+    ],
+    "Room_Final_Boss_Atrium": [
+        "Egg_Bench",
+        "bench"
+    ],
+    "Room_Final_Boss_Core": [
+        "Egg_Hollow_Knight",
+        null
+    ],
+    "Grimm_Divine": [
+        "Grimm_Divine",
+        "shop"
+    ],
+    "Grimm_Main_Tent": [
+        "Grimm_Tent",
+        null
+    ],
+    "Grimm_Nightmare": [
+        "Grimm_NKG",
+        null
+    ],
+    "Dream_01_False_Knight": [
+        "Dream_Failed_Champion",
+        null
+    ],
+    "Dream_02_Mage_Lord": [
+        "Dream_Soul_Tyrant",
+        null
+    ],
+    "Dream_03_Infected_Knight": [
+        "Dream_Lost_Kin",
+        null
+    ],
+    "Dream_04_White_Defender": [
+        "Dream_White_Defender",
+        null
+    ],
+    "Dream_Abyss": [
+        "Dream_Abyss",
+        null
+    ],
+    "Dream_Backer_Shrine": [
+        "Dream_Outside_Shrine",
+        null
+    ],
+    "Dream_Guardian_Hegemol": [
+        "Dream_Herrah",
+        null
+    ],
+    "Dream_Guardian_Lurien": [
+        "Dream_Lurien",
+        null
+    ],
+    "Dream_Guardian_Monomon": [
+        "Dream_Monomon",
+        null
+    ],
+    "Dream_Mighty_Zote": [
+        "Dream_Grey_Prince_Zote",
+        null
+    ],
+    "Dream_Nailcollection": [
+        "Dream_Nail",
+        null
+    ],
+    "Dream_Room_Believer_Shrine": [
+        "Dream_Shrine_of_Believers",
+        null
+    ],
+    "GG_Atrium": [
+        "Godhome_Atrium",
+        "bench"
+    ],
+    "GG_Atrium_Roof": [
+        "Godhome_Roof",
+        "bench"
+    ],
+    "GG_Blue_Room": [
+        "Godhome_Lifeblood",
+        null
+    ],
+    "GG_Land_Of_Storms": [
+        "Godhome_Land_Of_Storms",
+        null
+    ],
+    "GG_Mighty_Zote": [
+        "Scary_Zote",
+        null
+    ],
+    "GG_Unlock_Wastes": [
+        "Godhome_Godtuner",
+        null
+    ],
+    "GG_Workshop": [
+        "Godhome_Hall_Of_Gods",
+        null
+    ]
+}

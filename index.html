@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html id='main'>
+  <head>
+    <meta charset="UTF-8">
+    <title>HKAutoTracker</title>
+    <script src="jquery.min.js"></script>
+    <script src="mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark'
+      })
+      const updateGraph = () => {
+        var prevScroll = { x: window.scrollX, y: window.scrollY }
+        var graphDef = document.getElementById('mermaidGraph').innerHTML
+        var output = document.getElementById('mermaidOut')
+        var graph = mermaid.mermaidAPI.render('mermaidOutSVG', graphDef, (svgCode, bindFunction) => {
+          output.innerHTML = svgCode
+          var svg = document.getElementById('mermaidOutSVG')
+          svg.style.width = getComputedStyle(svg).maxWidth
+        })
+        window.scrollTo(prevScroll.x, prevScroll.y)
+      }
+      window.addEventListener('DOMContentLoaded', () => {
+        updateGraph()
+        new MutationObserver((mutationsList, observer) => {
+          updateGraph()
+        }).observe(document.getElementById('mermaidGraph'), { attributes: true, childList: true, subtree: true })
+      })
+    </script>
+    <script>
+      var zoom = 1
+      window.addEventListener('wheel', (event) => {
+        zoom -= (event.deltaY / 1500)
+        zoom = Math.min(Math.max(zoom, 0.2), 2)
+        document.body.style.zoom = zoom
+      })
+    </script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+
+        const ele = document.getElementById('main')
+        ele.style.cursor = 'grab'
+        let pos = { top: 0, left: 0, x: 0, y: 0 }
+
+        const mouseDownHandler = (e) => {
+          ele.style.cursor = 'grabbing'
+          ele.style.userSelect = 'none'
+          pos = {
+            left: window.scrollX,
+            top: window.scrollY,
+            x: e.clientX,
+            y: e.clientY
+          }
+          document.addEventListener('mousemove', mouseMoveHandler)
+          document.addEventListener('mouseup', mouseUpHandler)
+        }
+
+        const mouseMoveHandler = (e) => {
+          const dx = e.clientX - pos.x
+          const dy = e.clientY - pos.y
+          window.scrollTo(pos.left - dx, pos.top - dy)
+        }
+
+        const mouseUpHandler = () => {
+          ele.style.cursor = 'grab'
+          ele.style.removeProperty('usser-select')
+          document.removeEventListener('mousemove', mouseMoveHandler)
+          document.removeEventListener('mouseup', mouseUpHandler)
+        }
+
+        window.addEventListener('mousedown', mouseDownHandler)
+      })
+    </script>
+    <style>
+      body {
+        overflow: hidden;
+        height: 100%;
+        background-color: #202020;
+      }
+      .node {
+        cursor: default;
+      }
+      .node rect {
+        fill: #000000 !important;
+        stroke: #333 !important;
+      }
+      #mermaidGraph {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mermaidGraph">
+    </div>
+    <div id="mermaidOut">
+    </div>
+  </body>
+</html>

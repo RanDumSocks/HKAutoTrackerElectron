@@ -1,0 +1,18 @@
+{
+  "name": "hkautotrackerelectron",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "build-win": "electron-packager . hkautotrackerelectron --overwrite --asar=true --platform=win32 --arch=ia32 --icon=build/icon.png --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"HK Auto Tracker\""
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "electron": "^16.0.7",
+    "electron-builder": "^22.14.5",
+    "electron-packager": "^15.4.0"
+  }
+}

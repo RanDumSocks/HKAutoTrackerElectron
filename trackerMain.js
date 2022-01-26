@@ -1,6 +1,7 @@
 //document.getElementById('mermaidGraph').innerHTML
 
 console.log("...Starting tracker...")
+const { ipcRenderer } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const root = path.resolve(process.env.APPDATA, "../LocalLow/Team Cherry/Hollow Knight/Randomizer 4/Recent/")
@@ -12,7 +13,7 @@ const dict = path.resolve(__dirname, "mapDict.json")
 const output = "HKAutotrack.md"
 const lastOut = "localTracker.md"
 const rightOut = "rightLocations.md"
-const settingsFile = path.resolve(process.env.APPDATA, "HKAutoTracker/settings.json")
+const settings = require("./settings.js")
 
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
 const r_helperDoor = /(?<=\[)[a-zA-Z0-9_]*(?=\])/
@@ -21,6 +22,14 @@ const r_locationLogic = /[a-zA-Z0-9_]*(?=(\[| |$))/
 var mapTrackerString = ""
 var rightLocationString = ""
 var localTrackerString = ""
+var localPort = undefined
+
+ipcRenderer.on('local-link-main', (e, msg) => {
+   localPort = e.ports[0]
+})
+ipcRenderer.on('local-unlink', (e, msg) => {
+   localPort = undefined
+})
 
 var defaultTransitionTable = {
    Ruins2_10: { elevator: ["Ruins2_10b", "elevator"] },
@@ -113,45 +122,14 @@ for (const itemSpoiler of locationData.itemPlacements) {
    locationLogic[itemSpoiler.location.logic.name] = logic.match(r_locationLogic)?.[0]
 }
 
-const defaultOptions = {
-   translationType: 'full',
-   mapOrientation: 'LR',
-   lineLength: 1
-}
-var options = {}
-{ // Load options
+fs.watchFile(settings.settingsFile, { interval: 1000 }, async (curr, prev) => {
+   console.log("settings update")
+   settings.loadSettings(false)
+   updateTracker()
+   updateLocation(true)
+   updateFiles()
+})
 
-   { // First load   
-      if (fs.existsSync(settingsFile)) {
-         try {
-            options = {...defaultOptions, ...JSON.parse(fs.readFileSync(settingsFile))}
-         } catch (err) {
-            console.log("Settings file corrupt, resetting to default settings.")
-            options = defaultOptions
-         }
-      } else {
-         options = defaultOptions
-      }
-      fs.mkdir(path.resolve(process.env.APPDATA, "HKAutoTracker"), { recursive: true }, (err) => {
-        if (err) throw err
-      })
-      fs.writeFile(settingsFile, JSON.stringify(options, null, 3), (err) => {
-         if (err) throw err
-      })
-      verifySettings()
-   }
-
-   { // Check updates
-      fs.watchFile(settingsFile, { interval: 1000 }, async (curr, prev) => {
-         try {
-            options = {...defaultOptions, ...JSON.parse(fs.readFileSync(settingsFile))}
-         } catch (err) {
-            console.log("Settings file corrupt, resetting to default settings.")
-            options = defaultOptions
-         }
-      })
-   }
-}
 
 async function start() {
    updateLocation()
@@ -171,18 +149,6 @@ async function start() {
       }
    })
    console.log("Tracker running.")
-}
-
-function verifySettings() {
-   if (!['full', 'basic', 'landmark', 'none'].includes(options.translationType)) {
-      console.log(`Invalid translationType option "${options.translationType}". Must be either "full", "basic", "landmark", or "none".`)
-   }
-   if (!['TB', 'TD', 'BT', 'RL', 'LR'].includes(options.mapOrientation)) {
-      console.log(`Invalid mapOrientation option "${options.mapOrientation}". Must be either "TB", "TD", "BT", "RL", or "LR".`)
-   }
-   if (![1, 2, 3].includes(options.lineLength)) {
-      console.log(`Invalid lineLength option "${options.lineLength}". Must be either "1", "2", or "3".`)
-   }
 }
 
 function updateTracker() {
@@ -279,7 +245,7 @@ function updateTracker() {
          if (connections[`${toId[0]}:${toId[1]}`] != `${location}:${fromDoor}`) {
             var nameFrom = location
             var nameTo = toId[0]
-            var length = options.lineLength == 1 ? "" : (options.lineLength == 2 ? "-" : "--")
+            var length = settings.getSetting('lineLength') == "normal" ? "" : (settings.getSetting('lineLength') == "medium" ? "-" : "--")
             subgraph += `${nameFrom} --${length}- ${nameTo}\n`
 
             var fromCheck = checkRoom(nameFrom)
@@ -306,7 +272,7 @@ function updateTracker() {
       transitionData += subgraph
    }
 
-   mapTrackerString = `flowchart ${options.mapOrientation}\n${classDefs}\n\n${nameString}\n${transitionData}`
+   mapTrackerString = `flowchart ${settings.getSetting('mapOrientation')}\n${classDefs}\n\n${nameString}\n${transitionData}`
 }
 
 function updateLocation(updateAnyway, onlyReport) {
@@ -359,7 +325,7 @@ function updateLocation(updateAnyway, onlyReport) {
          }
       }
       transitionData += `${lastLocation}:::last\n`
-      chartLocal = `# Local map\n\`\`\`mermaid\nflowchart LR\n${classDefs}\n\n${transitionData}\n\`\`\`\n`
+      chartLocal = `flowchart LR\n${classDefs}\n\n${transitionData}\n`
    }
 
    { // Nearest Transition
@@ -476,20 +442,21 @@ function updateLocation(updateAnyway, onlyReport) {
       benchChart = `# Nearest bench\n\`\`\`mermaid\nflowchart LR\n${classDefs}\n${benchString}\n\`\`\`\n`
    }
 
-   localTrackerString = `${chartLocal}${transitionChart}${checkChart}${benchChart}`
+   // localTrackerString = `${chartLocal}${transitionChart}${checkChart}${benchChart}`
+   localTrackerString = chartLocal
    return true
 }
 
 function styleRoom(room) {
    var name = ""
    var number = checkTable[room] ? ` [${checkTable[room]}]` : ""
-   if (options.translationType == 'full') {
+   if (settings.getSetting('translationType') == 'full') {
       name = special[room] ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
-   } else if (options.translationType == 'basic') {
+   } else if (settings.getSetting('translationType') == 'basic') {
       name = special[room] && special[room]?.[1] && (special[room][1] == 'bench' || special[room][1] == 'shop' || special[room][1] == 'stag') ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
-   } else if (options.translationType == 'landmark') {
+   } else if (settings.getSetting('translationType') == 'landmark') {
       name = special[room] && specialCustom[room]?.[1] ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
-   } else if (options.translationType == 'none') {
+   } else if (settings.getSetting('translationType') == 'none') {
       name = `${room}(["${room}${number}"])`
    }
    //var name = room
@@ -521,20 +488,17 @@ async function updateFiles() {
       lastMapTrackerString = mapTrackerString
    }
 
-   /*
-   if (rightLocationString != lastRightLocationString) {
+   /*if (rightLocationString != lastRightLocationString) {
       fs.writeFile(rightOut, rightLocationString, (err) => {
          if (err) throw err
       })
       lastRightLocationString = rightLocationString
-   }
-   if (lastLocalTrackerString != localTrackerString) {
-      fs.writeFile(lastOut, localTrackerString, (err) => {
-         if (err) throw err
-      })
+   }*/
+
+   if (localPort && lastLocalTrackerString != localTrackerString) {
+      localPort.postMessage(localTrackerString)
       lastLocalTrackerString = localTrackerString
    }
-   */
 }
 
 window.addEventListener('DOMContentLoaded', () => {

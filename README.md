@@ -60,4 +60,4 @@ The map is colour coded, these are what the colours mean:
 	- unchecked reachable screen transition
 
 ## Feedback
-If yyou find a bug, want a feature, or anything of that sort, [submit an issue](https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new)and I will respond swiftly.
+If yyou find a bug, want a feature, or anything of that sort, [submit an issue](https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new) and I will respond swiftly.

@@ -22,13 +22,22 @@ const r_locationLogic = /[a-zA-Z0-9_]*(?=(\[| |$))/
 var mapTrackerString = ""
 var rightLocationString = ""
 var localTrackerString = ""
+var nearestTrackerData = {}
 var localPort = undefined
+var nearestPort = undefined
 
 ipcRenderer.on('local-link-main', (e, msg) => {
    localPort = e.ports[0]
 })
 ipcRenderer.on('local-unlink', (e, msg) => {
    localPort = undefined
+})
+
+ipcRenderer.on('nearest-link-main', (e, msg) => {
+   nearestPort = e.ports[0]
+})
+ipcRenderer.on('nearest-unlink', (e, msg) => {
+   nearestPort = undefined
 })
 
 var defaultTransitionTable = {
@@ -437,12 +446,16 @@ function updateLocation(updateAnyway, onlyReport) {
          }
          if (foundTransition && foundCheck) { break }
       }
-      transitionChart = `# Nearest transition\n\`\`\`mermaid\nflowchart LR\n${classDefs}\n${transitionString}\n\`\`\`\n`
-      checkChart = `# Nearest check\n\`\`\`mermaid\nflowchart LR\n${classDefs}\n${checkString}\n\`\`\`\n`
-      benchChart = `# Nearest bench\n\`\`\`mermaid\nflowchart LR\n${classDefs}\n${benchString}\n\`\`\`\n`
+      transitionChart = `flowchart LR\n${classDefs}\n${transitionString}`
+      checkChart = `flowchart LR\n${classDefs}\n${checkString}`
+      benchChart = `flowchart LR\n${classDefs}\n${benchString}`
+      nearestTrackerData = {
+         transitionChart: transitionChart,
+         checkChart: checkChart,
+         benchChart: benchChart
+      }
    }
 
-   // localTrackerString = `${chartLocal}${transitionChart}${checkChart}${benchChart}`
    localTrackerString = chartLocal
    return true
 }
@@ -482,6 +495,7 @@ function checkRoom(room) {
 var lastMapTrackerString = ""
 var lastRightLocationString = ""
 var lastLocalTrackerString = ""
+var lastNearestTrackerData = {}
 async function updateFiles() {
    if (mapTrackerString != lastMapTrackerString) {
       document.getElementById('mermaidGraph').innerHTML = mapTrackerString
@@ -498,6 +512,11 @@ async function updateFiles() {
    if (localPort && lastLocalTrackerString != localTrackerString) {
       localPort.postMessage(localTrackerString)
       lastLocalTrackerString = localTrackerString
+   }
+
+   if (nearestPort && lastNearestTrackerData != nearestTrackerData) {
+      nearestPort.postMessage(nearestTrackerData)
+      lastNearestTrackerData = nearestTrackerData
    }
 }
 

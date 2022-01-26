@@ -5,6 +5,7 @@ const settings = require("./settings.js")
 
 var winMain = undefined
 var winLocal = undefined
+var winNearest = undefined
 
 const setOrientation = (menuItem, window, event) => {
    settings.changeSetting("mapOrientation", menuItem.id)
@@ -31,7 +32,7 @@ const toggleLocalTracker = () => {
       winLocal.on('closed', () => {
          winLocal = null
          Menu.getApplicationMenu().getMenuItemById('localTracker').checked = false
-         winMain.webContents.postMessage('local-unlink', 'null')
+         winMain?.webContents.postMessage('local-unlink', 'null')
       })
    
       winLocal.loadURL(
@@ -49,6 +50,40 @@ const toggleLocalTracker = () => {
       winLocal.webContents.postMessage('local-link', 'null', [localPort])
    } else {
       winLocal.close()
+   }
+}
+
+const toggleNearestTracker = () => {
+   if (!winNearest) {
+      winNearest = new BrowserWindow({
+         width: 800,
+         height: 600,
+         webPreferences: {
+            preload: path.resolve(__dirname, "trackerNearest.js")
+         },
+      })
+   
+      winNearest.on('closed', () => {
+         winNearest = null
+         Menu.getApplicationMenu().getMenuItemById('nearestTracker').checked = false
+         winMain?.webContents.postMessage('nearest-unlink', 'null')
+      })
+   
+      winNearest.loadURL(
+         formatURL({
+            pathname: path.resolve(__dirname, "nearestTracker.html"),
+            protocol: "file",
+            slashes: true,
+         })
+      )
+
+      const ports = new MessageChannelMain()
+      const mainPort = ports.port1
+      const localPort = ports.port2
+      winMain.webContents.postMessage('nearest-link-main', 'null', [mainPort])
+      winNearest.webContents.postMessage('local-link', 'null', [localPort])
+   } else {
+      winNearest.close()
    }
 }
 
@@ -168,6 +203,12 @@ let menuTemplate = [
             type: "checkbox",
             id: "localTracker",
             click: toggleLocalTracker
+         },
+         {
+            label: "Nearest Tracker",
+            type: "checkbox",
+            id: "nearestTracker",
+            click: toggleNearestTracker
          }
       ]
    },
@@ -189,6 +230,7 @@ const createWindowMain = () => {
    })
 
    winMain.on("closed", () => {
+      winMain = null
       if (process.platform !== "darwin") app.quit()
    })
 

@@ -2,7 +2,7 @@
 <html id='main'>
   <head>
     <meta charset="UTF-8">
-    <title>HKAutoTracker</title>
+    <title>HKAT</title>
     <script src="jquery.min.js"></script>
     <script src="mermaid.min.js"></script>
     <script>
@@ -24,12 +24,10 @@
           window.scrollTo(prevScroll.x, prevScroll.y)
         } catch (err) {
           console.log(err)
-          console.log(graphDef)
         }
       }
 
       window.addEventListener('DOMContentLoaded', () => {
-        console.log(document.getElementById('mermaidGraph'))
         updateGraph()
         new MutationObserver((mutationsList, observer) => {
           updateGraph()
@@ -101,6 +99,9 @@
       #mermaidGraph {
         display: none;
       }
+      .edgeLabel {
+            background-color: #202020 !important;
+         }
     </style>
   </head>
   <body>

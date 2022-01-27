@@ -10,9 +10,6 @@ const modLog = path.resolve(root, "../../ModLog.txt")
 const modLogAppend = path.resolve(root, "../../ModLogAppend.txt")
 const spoilerLog = path.resolve(root, "RawSpoiler.json")
 const dict = path.resolve(__dirname, "mapDict.json")
-const output = "HKAutotrack.md"
-const lastOut = "localTracker.md"
-const rightOut = "rightLocations.md"
 const settings = require("./settings.js")
 
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
@@ -53,7 +50,7 @@ var lastLocation = ""
 
 const specialCustom = {
    Crossroads_04: [ 'Salubra Bench', 'bench' ],
-   Tutorial_01: [ 'Start', 'start' ],
+   Tutorial_01: [ 'King\'s Pass', undefined ],
    RestingGrounds_12: [ 'Grey Mourner Bench', 'bench' ],
    RestingGrounds_09: [ 'Resting Grounds Stag Station', 'bench' ],
    Deepnest_East_06: [ 'Oro Bench', 'bench' ],
@@ -70,7 +67,7 @@ const specialCustom = {
    Room_temple: [ 'Temple', 'temple' ],
    Fungus1_16_alt: [ 'Greenpath Stag Station', 'bench' ],
    Crossroads_47: [ 'Crossroads Stag Station', 'bench' ],
-   Room_Ouiji: [ 'Jiji', undefined ],
+   Room_Ouiji: [ 'Jiji', 'shop' ],
    Room_Colosseum_02: [ 'Colosseum Bench', 'bench' ],
    Fungus1_15: [ 'Sheo Bench', 'bench' ],
    Crossroads_30: [ 'Crossroads Hot Spring Bench', 'bench' ],
@@ -477,7 +474,7 @@ function styleRoom(room) {
    } else if (settings.getSetting('translationType') == 'basic') {
       name = special[room] && special[room]?.[1] && (special[room][1] == 'bench' || special[room][1] == 'shop' || special[room][1] == 'stag') ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
    } else if (settings.getSetting('translationType') == 'landmark') {
-      name = special[room] && specialCustom[room]?.[1] ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
+      name = special[room] && specialCustom[room] ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
    } else if (settings.getSetting('translationType') == 'none') {
       name = `${room}(["${room}${number}"])`
    }

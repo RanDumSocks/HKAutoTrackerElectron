@@ -284,21 +284,30 @@ function updateTracker() {
    mapTrackerString = `flowchart ${settings.getSetting('mapOrientation')}\n${classDefs}\n\n${nameString}\n${transitionData}`
 }
 
+var lastTruncate = Date.now()
 function updateLocation(updateAnyway, onlyReport) {
    const r_transitionChange = /(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm
    const modLogFile = fs.readFileSync(modLog, 'utf-8')
 
-   const location = updateAnyway ? lastLocation : modLogFile.match(r_transitionChange)?.at(-1).match(/\b(\w+)$/)[0]
+   var location = modLogFile.match(r_transitionChange)?.at(-1).match(/\b(\w+)$/)[0]
+   if (updateAnyway && !location) { location = lastLocation }
    
    { // Local map
       var doors = transitionTable[location]
       var secondLayer = []
       var transitionData = ``
       var chartLocal = ""
-      if ((!location || !doors) || (!updateAnyway && lastLocation == location)) { return false }
+      if ((lastLocation == location) && !updateAnyway) { return false }
+      if (!location || !doors) { return false }
       if (onlyReport) { return true }
-      fs.truncate(modLog, 0, () => {})
-      fs.appendFile(modLogAppend, modLogFile, (err) => { if (err) throw err })
+      console.log("updatedHelper", location)
+
+      if (Date.now() + 1500 > lastTruncate) {
+         lastTruncate = Date.now()
+         fs.truncate(modLog, 0, () => {})
+         fs.appendFile(modLogAppend, modLogFile, (err) => { if (err) throw err })
+      }
+
       lastLocation = location
       for (const [fromDoor, toId] of Object.entries(doors)) {
             var nameFrom = location
@@ -472,7 +481,7 @@ function styleRoom(room) {
    } else if (settings.getSetting('translationType') == 'none') {
       name = `${room}(["${room}${number}"])`
    }
-   //var name = room
+
    if (lastLocation == room) {
       name = `${name}:::last`
    } else {

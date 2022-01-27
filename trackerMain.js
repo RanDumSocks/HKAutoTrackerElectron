@@ -304,7 +304,7 @@ function updateLocation(updateAnyway, onlyReport) {
 
       if (Date.now() + 1500 > lastTruncate) {
          lastTruncate = Date.now()
-         fs.truncate(modLog, 0, () => {})
+         fs.truncateSync(modLog)
          fs.appendFile(modLogAppend, modLogFile, (err) => { if (err) throw err })
       }
 

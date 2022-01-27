@@ -5,6 +5,8 @@
       <title>Nearest Tracker</title>
       <script src="jquery.min.js"></script>
       <script src="mermaid.min.js"></script>
+      <script src="helper/movement.js"></script>
+      <link rel="stylesheet" href="helper/graph.css">
       <script>
          mermaid.initialize({
             startOnLoad: false,
@@ -45,82 +47,6 @@
             }).observe(document.getElementById("mermaidGraph"), { attributes: true, childList: true, subtree: true })
          })
       </script>
-      <script>
-         var zoom = 1
-         window.addEventListener("wheel", (event) => {
-            zoom -= event.deltaY / 1500
-            zoom = Math.min(Math.max(zoom, 0.2), 2)
-            document.body.style.zoom = zoom
-         })
-      </script>
-      <script>
-         window.addEventListener("DOMContentLoaded", () => {
-            const ele = document.getElementById("main")
-            ele.style.cursor = "grab"
-            let pos = { top: 0, left: 0, x: 0, y: 0 }
-
-            const mouseDownHandler = (e) => {
-               ele.style.cursor = "grabbing"
-               ele.style.userSelect = "none"
-               pos = {
-                  left: window.scrollX,
-                  top: window.scrollY,
-                  x: e.clientX,
-                  y: e.clientY,
-               }
-               document.addEventListener("mousemove", mouseMoveHandler)
-               document.addEventListener("mouseup", mouseUpHandler)
-            }
-
-            const mouseMoveHandler = (e) => {
-               const dx = e.clientX - pos.x
-               const dy = e.clientY - pos.y
-               window.scrollTo(pos.left - dx, pos.top - dy)
-            }
-
-            const mouseUpHandler = () => {
-               ele.style.cursor = "grab"
-               ele.style.removeProperty("usser-select")
-               document.removeEventListener("mousemove", mouseMoveHandler)
-               document.removeEventListener("mouseup", mouseUpHandler)
-            }
-
-            window.addEventListener("mousedown", mouseDownHandler)
-         })
-      </script>
-      <style>
-         @font-face {
-            font-family: Ubuntu;
-            src: url("Ubuntu-Bold.ttf");
-         }
-         body {
-            overflow: hidden;
-            height: 100%;
-            background-color: #202020;
-         }
-         h2 {
-            font-family: Ubuntu;
-            color: floralwhite;
-         }
-         .node {
-            cursor: default;
-         }
-         .node rect {
-            fill: #000000 !important;
-            stroke: #333 !important;
-         }
-         .edge-thickness-normal:hover {
-            stroke-width: 8px !important;
-            stroke: green !important;
-            cursor: help;
-         }
-         .mermaidGraph {
-            display: none;
-         }
-         .edgeLabel {
-            background-color: #202020 !important;
-         }
-      </style>
    </head>
    <body>
       <div class="mermaidGraph" id="mermaidGraph"></div>

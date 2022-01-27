@@ -37,7 +37,7 @@ ipcRenderer.on('nearest-unlink', (e, msg) => {
    nearestPort = undefined
 })
 
-var defaultTransitionTable = {
+const defaultTransitionTable = {
    Ruins2_10: { elevator: ["Ruins2_10b", "elevator"] },
    Ruins2_10b: { elevator: ["Ruins2_10", "elevator"] },
    Crossroads_49: { elevator: ["Crossroads_49b", "elevator"] },
@@ -165,7 +165,7 @@ function updateTracker() {
    addedStyles = []
    addedNames = []
    nameString = ""
-   transitionTable = defaultTransitionTable
+   transitionTable = JSON.parse(JSON.stringify(defaultTransitionTable))
    var helperLogFile = undefined
    try {
        helperLogFile = fs.readFileSync(helperLog, 'utf-8').replaceAll(/\*/g, "")
@@ -297,7 +297,6 @@ function updateLocation(updateAnyway, onlyReport) {
       if ((lastLocation == location) && !updateAnyway) { return false }
       if (!location || !doors) { return false }
       if (onlyReport) { return true }
-      console.log("updatedHelper", location)
 
       if (Date.now() + 1500 > lastTruncate) {
          lastTruncate = Date.now()

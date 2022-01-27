@@ -101,7 +101,11 @@ const specialCustom = {
    Room_Town_Stag_Station: ["Dirtmouth Stag", "stag"],
    Abyss_22: ["Hidden Station", "bench"],
    Crossroads_38: ["Grubfather", "shop"],
-   Cliffs_03: ["Stag Nest", "stag"]
+   Cliffs_03: ["Stag Nest", "stag"],
+   Crossroads_07: ["Crossroads Hub", undefined],
+   RestingGrounds_05: ["Resting Grounds Hub", undefined],
+   Ruins2_04: ["City Hub", undefined],
+   Room_ruinhouse: ["Sly Shack", undefined]
 }
 const special = { ...JSON.parse(fs.readFileSync(dict)), ...specialCustom }
 

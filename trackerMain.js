@@ -125,6 +125,8 @@ classDef target fill:#06288f;
 var locationData = JSON.parse(fs.readFileSync(spoilerLog))
 var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
 var locationLogic = {}
+var oneWayOut = []
+var oneWayIn = []
 
 termsData.push("RIGHTBALDURS")
 
@@ -133,6 +135,14 @@ var regexTerms = new RegExp(termsData.join("|"), "g")
 for (const itemSpoiler of locationData.itemPlacements) {
    var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
    locationLogic[itemSpoiler.location.logic.name] = logic.match(r_locationLogic)?.[0]
+}
+for (const transition of locationData.LM.Transitions) {
+   if (transition.oneWayType =='OneWayOut') {
+      oneWayOut.push(`${transition.sceneName}:${transition.gateName}`)
+   }
+   if (transition.oneWayType =='OneWayIn') {
+      oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
+   }
 }
 
 fs.watchFile(settings.settingsFile, { interval: 1000 }, async (curr, prev) => {
@@ -201,7 +211,7 @@ function updateTracker() {
             var transitionTo = trimmedLine.match(r_transitionTo)[0]
             var doorFrom = trimmedLine.match(r_doorTransitions)[0]
             var doorTo = trimmedLine.match(r_doorTransitions)[1]
-            if (transitionTo && transitionFrom) {
+            if (transitionTo && transitionFrom && !oneWayOut.includes(`${transitionFrom}:${doorFrom}`)) {
                if (!transitionTable[transitionFrom]) { transitionTable[transitionFrom] = {} }
                transitionTable[transitionFrom][doorFrom] = [transitionTo, doorTo]
             }
@@ -259,7 +269,11 @@ function updateTracker() {
             var nameFrom = location
             var nameTo = toId[0]
             var length = settings.getSetting('lineLength') == "normal" ? "" : (settings.getSetting('lineLength') == "medium" ? "-" : "--")
-            subgraph += `${nameFrom} --${length}- ${nameTo}\n`
+            if (oneWayIn.includes(`${location}:${fromDoor}`)) {
+               subgraph += `${nameFrom} --${length}> ${nameTo}\n`
+            } else {
+               subgraph += `${nameFrom} --${length}- ${nameTo}\n`
+            }
 
             var fromCheck = checkRoom(nameFrom)
             var toCheck = checkRoom(nameTo)
@@ -308,7 +322,7 @@ function updateLocation(updateAnyway, onlyReport) {
       if (Date.now() + 1500 > lastTruncate) {
          lastTruncate = Date.now()
          fs.truncateSync(modLog)
-         fs.appendFile(modLogAppend, modLogFile, (err) => { if (err) throw err })
+         fs.appendFileSync(modLogAppend, modLogFile, (err) => { if (err) throw err })
       }
 
       lastLocation = location
@@ -332,6 +346,7 @@ function updateLocation(updateAnyway, onlyReport) {
       for (const [transition, transitionCheck] of Object.entries(avaliableTransitionTable)) {
          if (transition == location) {
             for (const door of transitionCheck) {
+               if (oneWayOut.includes(`${transition}:${door}`)) { continue }
                transitionData += `${transition} -- ${door} --> UNCHECKED([UNCHECKED]):::unchecked\n`
             }
          }
@@ -542,6 +557,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
 ipcRenderer.on('node-menu-apply', (e, roomName) => {
    targetNode = roomName
+   updateTracker()
+   updateLocation(true)
+   updateFiles()
+})
+
+ipcRenderer.on('node-set-current', (e, roomName) => {
+   lastLocation = roomName
    updateTracker()
    updateLocation(true)
    updateFiles()

@@ -274,6 +274,10 @@ ipcMain.on('node-menu', (e, nodeName) => {
       {
          label: "Set Target",
          click: () => { winMain.webContents.send('node-menu-apply', nodeName) }
+      },
+      {
+         label: "Set Current Location",
+         click: () => { winMain.webContents.send('node-set-current', nodeName) }
       }
    ]
    const menu = Menu.buildFromTemplate(menuTemplate)

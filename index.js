@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, globalShortcut, MessageChannelMain } = require("electron")
+const { app, BrowserWindow, Menu, globalShortcut, MessageChannelMain, ipcMain } = require("electron")
 const path = require("path")
 const formatURL = require("url").format
 const settings = require("./settings.js")
@@ -25,7 +25,10 @@ const toggleLocalTracker = () => {
          width: 800,
          height: 600,
          webPreferences: {
-            preload: path.resolve(__dirname, "trackerLocal.js")
+            preload: path.resolve(__dirname, "trackerLocal.js"),
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
          },
       })
    
@@ -59,7 +62,10 @@ const toggleNearestTracker = () => {
          width: 800,
          height: 600,
          webPreferences: {
-            preload: path.resolve(__dirname, "trackerNearest.js")
+            preload: path.resolve(__dirname, "trackerNearest.js"),
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
          },
       })
    
@@ -225,7 +231,10 @@ const createWindowMain = () => {
       width: 800,
       height: 600,
       webPreferences: {
-         preload: path.resolve(__dirname, "trackerMain.js")
+         preload: path.resolve(__dirname, "trackerMain.js"),
+         nodeIntegration: true,
+         nodeIntegrationInWorker: true,
+         contextIsolation: false
       },
    })
 
@@ -259,3 +268,14 @@ const createWindowMain = () => {
       if (process.platform !== "darwin") app.quit()
    })
 }
+
+ipcMain.on('node-menu', (e, nodeName) => {
+   let menuTemplate = [
+      {
+         label: "Set Target",
+         click: () => { winMain.webContents.send('node-menu-apply', nodeName) }
+      }
+   ]
+   const menu = Menu.buildFromTemplate(menuTemplate)
+   menu.popup()
+})

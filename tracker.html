@@ -10,7 +10,13 @@
     <script>
       mermaid.initialize({
         startOnLoad: false,
-        theme: 'dark'
+        theme: 'dark',
+        flowchart: {
+          curve: 'basis',
+          nodeSpacing: 25,
+          rankSpacing: 75,
+        },
+        securityLevel:'loose',
       })
 
       const updateGraph = (data) => {
@@ -23,6 +29,7 @@
             var svg = document.getElementById('mermaidOutSVG')
             svg.style.width = getComputedStyle(svg).maxWidth
           })
+          addClick()
           window.scrollTo(prevScroll.x, prevScroll.y)
         } catch (err) {
           console.log(err)

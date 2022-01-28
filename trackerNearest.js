@@ -6,6 +6,7 @@ ipcRenderer.on('local-link', (e, msg) => {
       document.getElementById('mermaidGraphTransition').innerHTML = trackerData.data.transitionChart
       document.getElementById('mermaidGraphCheck').innerHTML = trackerData.data.checkChart
       document.getElementById('mermaidGraphBench').innerHTML = trackerData.data.benchChart
-      document.getElementById('mermaidGraph').innerHTML = `${trackerData.data.transitionChart}\n${trackerData.data.checkChart}\n${trackerData.data.benchChart}`
+      document.getElementById('mermaidGraphTarget').innerHTML = trackerData.data.targetChart
+      document.getElementById('mermaidGraph').innerHTML = `${trackerData.data.transitionChart}\n${trackerData.data.checkChart}\n${trackerData.data.benchChart}\n${trackerData.data.targetChart}`
    }
 })

@@ -1,5 +1,3 @@
-//document.getElementById('mermaidGraph').innerHTML
-
 console.log("...Starting tracker...")
 const { ipcRenderer } = require('electron')
 const fs = require('fs')
@@ -11,6 +9,8 @@ const modLogAppend = path.resolve(root, "../../ModLogAppend.txt")
 const spoilerLog = path.resolve(root, "RawSpoiler.json")
 const dict = path.resolve(__dirname, "mapDict.json")
 const settings = require("./settings.js")
+require("./helper/nodeMenu")
+
 
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
 const r_helperDoor = /(?<=\[)[a-zA-Z0-9_]*(?=\])/
@@ -47,6 +47,7 @@ var transitionTable = {}
 var checkTable = {}
 var avaliableTransitionTable = {}
 var lastLocation = ""
+var targetNode = undefined // Node to pathfind to
 
 const specialCustom = {
    Crossroads_04: [ 'Salubra Bench', 'bench' ],
@@ -105,7 +106,8 @@ const specialCustom = {
    Crossroads_07: ["Crossroads Hub", undefined],
    RestingGrounds_05: ["Resting Grounds Hub", undefined],
    Ruins2_04: ["City Hub", undefined],
-   Room_ruinhouse: ["Sly Shack", undefined]
+   Room_ruinhouse: ["Sly Shack", undefined],
+   Fungus2_01: ["Queen's Station", undefined]
 }
 const special = { ...JSON.parse(fs.readFileSync(dict)), ...specialCustom }
 
@@ -117,6 +119,7 @@ classDef transition stroke-width:4px,stroke:#d68b00;
 classDef check color:#3ab020;
 classDef last fill:#022e00;
 classDef unchecked fill:#9e3c03;
+classDef target fill:#06288f;
 `
 
 var locationData = JSON.parse(fs.readFileSync(spoilerLog))
@@ -351,15 +354,21 @@ function updateLocation(updateAnyway, onlyReport) {
       var visited = {}
       var dist = {}
       var pred = {}
+
       var foundTransition = false
       var foundCheck = false
-      var foundBench
+      var foundBench = false
+      var foundTarget = false
+
       var transitionString = ""
       var checkString = ""
       var benchString = ""
+      var targetString = ""
+
       var transitionChart = ""
       var checkChart = ""
       var benchChart = ""
+      var targetChart = ""
 
       visited[location] = true
       dist[location] = 0
@@ -376,9 +385,9 @@ function updateLocation(updateAnyway, onlyReport) {
                pred[front] = u
 
                BFSqueue.push(front)
-               if (avaliableTransitionTable[front] && !foundTransition) { // Transition path
-                  foundTransition = true
-                  // Generate Path
+
+               let buildBFSMap = (outStringC) => {
+                  var outString = outStringC
                   var currPrint = u
                   var predPrint = pred[u]
                   while (predPrint) {
@@ -389,79 +398,71 @@ function updateLocation(updateAnyway, onlyReport) {
                            break
                         }
                      }
-                     transitionString += `${styleRoom(predPrint)} -- ${door} --> ${styleRoom(currPrint)}\n${checkRoom(currPrint)}${checkRoom(predPrint)}`
+                     outString += `${styleRoom(predPrint)} -- ${door} --> ${styleRoom(currPrint)}\n${checkRoom(currPrint)}${checkRoom(predPrint)}`
                      currPrint = predPrint
                      predPrint = pred[currPrint]
                   }
+                  if (!transitionTable[front]) { return false }
                   for (const [doorTrans, toRoom] of Object.entries(transitionTable[front])) {
                      if (toRoom[0] == u) {
                         door = toRoom[1]
                         break
                      }
                   }
-                  transitionString += `${styleRoom(u)} -- ${door} --> ${styleRoom(front)}\n${checkRoom(u)}${checkRoom(front)}`
+                  outString += `${styleRoom(u)} -- ${door} --> ${styleRoom(front)}\n${checkRoom(u)}${checkRoom(front)}`
+                  return outString
                }
+
+               if (avaliableTransitionTable[front] && !foundTransition) { // Transition path
+                  foundTransition = true
+                  let successBFS = buildBFSMap(transitionString)
+                  if (!successBFS) {
+                     continue
+                  } else {
+                     transitionString = successBFS
+                  }
+               }
+
                if (checkTable[front] && !foundCheck) { // Check path
                   foundCheck = true
-                  // Generate Path
-                  var currPrint = u
-                  var predPrint = pred[u]
-                  while (predPrint) {
-                     var door = ""
-                     for (const [doorTrans, toRoom] of Object.entries(transitionTable[currPrint])) { // Find door
-                        if (toRoom[0] == predPrint) {
-                           door = toRoom[1]
-                           break
-                        }
-                     }
-                     checkString += `${styleRoom(predPrint)} -- ${door} --> ${styleRoom(currPrint)}\n${checkRoom(currPrint)}${checkRoom(predPrint)}`
-                     currPrint = predPrint
-                     predPrint = pred[currPrint]
+                  let successBFS = buildBFSMap(checkString)
+                  if (!successBFS) {
+                     continue
+                  } else {
+                     checkString = successBFS
                   }
-                  for (const [doorTrans, toRoom] of Object.entries(transitionTable[front])) { // Find door
-                     if (toRoom[0] == u) {
-                        door = toRoom[1]
-                        break
-                     }
-                  }
-                  checkString += `${styleRoom(u)} -- ${door} --> ${styleRoom(front)}\n${checkRoom(u)}${checkRoom(front)}`
                }
                if (special[front]?.[1] == 'bench' && !foundBench) { // Check bench
                   foundBench = true
-                  // Generate Path
-                  var currPrint = u
-                  var predPrint = pred[u]
-                  while (predPrint) {
-                     var door = ""
-                     for (const [doorTrans, toRoom] of Object.entries(transitionTable[currPrint])) { // Find door
-                        if (toRoom[0] == predPrint) {
-                           door = toRoom[1]
-                           break
-                        }
-                     }
-                     benchString += `${styleRoom(predPrint)} -- ${door} --> ${styleRoom(currPrint)}\n${checkRoom(currPrint)}${checkRoom(predPrint)}`
-                     currPrint = predPrint
-                     predPrint = pred[currPrint]
+                  let successBFS = buildBFSMap(benchString)
+                  if (!successBFS) {
+                     continue
+                  } else {
+                     benchString = successBFS
                   }
-                  for (const [doorTrans, toRoom] of Object.entries(transitionTable[front])) { // Find door
-                     if (toRoom[0] == u) {
-                        door = toRoom[1]
-                        break
-                     }
+               }
+               if (targetNode == front && !foundTarget) { // Check bench
+                  foundTarget = true
+                  let successBFS = buildBFSMap(targetString)
+                  if (!successBFS) {
+                     continue
+                  } else {
+                     targetString = successBFS
                   }
-                  benchString += `${styleRoom(u)} -- ${door} --> ${styleRoom(front)}\n${checkRoom(u)}${checkRoom(front)}`
                }
             }
          }
-         if (foundTransition && foundCheck) { break }
+         if (foundTransition && foundCheck && foundBench && foundTarget) { break }
       }
       transitionChart = `flowchart LR\n${classDefs}\n${transitionString}`
       checkChart = `flowchart LR\n${classDefs}\n${checkString}`
       benchChart = `flowchart LR\n${classDefs}\n${benchString}`
+      targetChart = `flowchart LR\n${classDefs}\n${targetString}`
       nearestTrackerData = {
          transitionChart: transitionChart,
          checkChart: checkChart,
-         benchChart: benchChart
+         benchChart: benchChart,
+         targetChart: targetChart
       }
    }
 
@@ -484,6 +485,8 @@ function styleRoom(room) {
 
    if (lastLocation == room) {
       name = `${name}:::last`
+   } else if (targetNode == room) {
+      name = `${name}:::target`
    } else {
       name = special[room]?.[1] ? `${name}:::${special[room]?.[1]}` : name
    }
@@ -535,4 +538,11 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
         console.log(err)
     }
+})
+
+ipcRenderer.on('node-menu-apply', (e, roomName) => {
+   targetNode = roomName
+   updateTracker()
+   updateLocation(true)
+   updateFiles()
 })

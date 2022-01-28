@@ -18,6 +18,7 @@
             var graphDefTransition = document.getElementById("mermaidGraphTransition").innerText
             var graphDefCheck = document.getElementById("mermaidGraphCheck").innerText
             var graphDefBench = document.getElementById("mermaidGraphBench").innerText
+            var graphDefTarget = document.getElementById("mermaidGraphTarget").innerText
             try {
                var graph = mermaid.mermaidAPI.render("mermaidOutSVGTransition", graphDefTransition, (svgCode, bindFunction) => {
                   document.getElementById("mermaidOutTransition").innerHTML = svgCode
@@ -32,6 +33,11 @@
                var graph = mermaid.mermaidAPI.render("mermaidOutSVGBench", graphDefBench, (svgCode, bindFunction) => {
                   document.getElementById("mermaidOutBench").innerHTML = svgCode
                   var svg = document.getElementById("mermaidOutSVGBench")
+                  svg.style.width = getComputedStyle(svg).maxWidth
+               })
+               var graph = mermaid.mermaidAPI.render("mermaidOutSVGTarget", graphDefTarget, (svgCode, bindFunction) => {
+                  document.getElementById("mermaidOutTarget").innerHTML = svgCode
+                  var svg = document.getElementById("mermaidOutSVGTarget")
                   svg.style.width = getComputedStyle(svg).maxWidth
                })
             } catch (err) {
@@ -64,6 +70,11 @@
          <h2>Nearest Bench</h2>
          <div class="mermaidGraph" id="mermaidGraphBench"></div>
          <div id="mermaidOutBench"></div>
+      </div>
+      <div id="nTarget">
+         <h2>Target</h2>
+         <div class="mermaidGraph" id="mermaidGraphTarget"></div>
+         <div id="mermaidOutTarget"></div>
       </div>
    </body>
 </html>

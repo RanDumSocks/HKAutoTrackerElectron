@@ -9,6 +9,7 @@ const modLogAppend = path.resolve(root, "../../ModLogAppend.txt")
 const spoilerLog = path.resolve(root, "RawSpoiler.json")
 const dict = path.resolve(__dirname, "mapDict.json")
 const settings = require("./settings.js")
+const rLineReader = require('reverse-line-reader')
 require("./helper/nodeMenu")
 
 
@@ -122,54 +123,61 @@ classDef unchecked fill:#9e3c03;
 classDef target fill:#06288f;
 `
 
-var locationData = JSON.parse(fs.readFileSync(spoilerLog))
 var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
 var locationLogic = {}
 var oneWayOut = []
 var oneWayIn = []
 
-termsData.push("RIGHTBALDURS")
-
 var regexTerms = new RegExp(termsData.join("|"), "g")
 
-for (const itemSpoiler of locationData.itemPlacements) {
-   var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
-   locationLogic[itemSpoiler.location.logic.name] = logic.match(r_locationLogic)?.[0]
-}
-for (const transition of locationData.LM.Transitions) {
-   if (transition.oneWayType =='OneWayOut') {
-      oneWayOut.push(`${transition.sceneName}:${transition.gateName}`)
+function loadSpoiler() {
+   var locationData = JSON.parse(fs.readFileSync(spoilerLog))
+   locationLogic = {}
+   oneWayOut = []
+   oneWayIn = []
+   for (const itemSpoiler of locationData.itemPlacements) {
+      var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
+      locationLogic[itemSpoiler.location.logic.name] = logic.match(r_locationLogic)?.[0]
    }
-   if (transition.oneWayType =='OneWayIn') {
-      oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
+   for (const transition of locationData.LM.Transitions) {
+      if (transition.oneWayType =='OneWayOut') {
+         oneWayOut.push(`${transition.sceneName}:${transition.gateName}`)
+      }
+      if (transition.oneWayType =='OneWayIn') {
+         oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
+      }
    }
 }
-
-fs.watchFile(settings.settingsFile, { interval: 1000 }, async (curr, prev) => {
-   console.log("settings update")
-   settings.loadSettings(false)
-   updateTracker()
-   updateLocation(true)
-   updateFiles()
-})
-
 
 async function start() {
-   updateLocation()
+   loadSpoiler()
+   await updateLocation()
    updateTracker()
    updateFiles()
    fs.watchFile(helperLog, { interval: 500 }, async (curr, prev) => {
       updateTracker()
-      updateLocation(true)
+      await updateLocation(true)
       updateFiles()
    })
-   fs.watchFile(modLog, { interval: 500 }, async (curr, prev) => {
-      if (updateLocation(false, true)) {
+   fs.watchFile(modLog, { interval: 1000 }, async (curr, prev) => {
+      if (await updateLocation(false, true)) {
          updateTracker()
-         updateLocation()
+         await updateLocation()
          updateTracker()
          updateFiles()
       }
+   })
+   fs.watchFile(settings.settingsFile, { interval: 1000 }, async (curr, prev) => {
+      settings.loadSettings(false)
+      updateTracker()
+      await updateLocation(true)
+      updateFiles()
+   })
+   fs.watchFile(spoilerLog, {interval: 1200}, async (curr, prev) => {
+      loadSpoiler()
+      updateTracker()
+      await updateLocation()
+      updateFiles()
    })
    console.log("Tracker running.")
 }
@@ -302,12 +310,16 @@ function updateTracker() {
    mapTrackerString = `flowchart ${settings.getSetting('mapOrientation')}\n${classDefs}\n\n${nameString}\n${transitionData}`
 }
 
-var lastTruncate = Date.now()
-function updateLocation(updateAnyway, onlyReport) {
+async function updateLocation(updateAnyway, onlyReport) {
    const r_transitionChange = /(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm
-   const modLogFile = fs.readFileSync(modLog, 'utf-8')
+   var location = undefined
 
-   var location = modLogFile.match(r_transitionChange)?.at(-1).match(/\b(\w+)$/)[0]
+   await rLineReader.eachLine(modLog, (line, last) => {
+      location = line.match(r_transitionChange)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
+      if (location) { return false }
+   })
+
+
    if (updateAnyway && !location) { location = lastLocation }
    
    { // Local map
@@ -318,12 +330,6 @@ function updateLocation(updateAnyway, onlyReport) {
       if ((lastLocation == location) && !updateAnyway) { return false }
       if (!location || !doors) { return false }
       if (onlyReport) { return true }
-
-      if (Date.now() + 1500 > lastTruncate) {
-         lastTruncate = Date.now()
-         fs.truncateSync(modLog)
-         fs.appendFileSync(modLogAppend, modLogFile, (err) => { if (err) throw err })
-      }
 
       lastLocation = location
       for (const [fromDoor, toId] of Object.entries(doors)) {
@@ -346,7 +352,6 @@ function updateLocation(updateAnyway, onlyReport) {
       for (const [transition, transitionCheck] of Object.entries(avaliableTransitionTable)) {
          if (transition == location) {
             for (const door of transitionCheck) {
-               if (oneWayOut.includes(`${transition}:${door}`)) { continue }
                transitionData += `${transition} -- ${door} --> UNCHECKED([UNCHECKED]):::unchecked\n`
             }
          }
@@ -555,16 +560,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 })
 
-ipcRenderer.on('node-menu-apply', (e, roomName) => {
+ipcRenderer.on('node-menu-apply', async (e, roomName) => {
    targetNode = roomName
    updateTracker()
-   updateLocation(true)
+   await updateLocation(true)
    updateFiles()
 })
 
-ipcRenderer.on('node-set-current', (e, roomName) => {
+ipcRenderer.on('node-set-current', async (e, roomName) => {
    lastLocation = roomName
    updateTracker()
-   updateLocation(true)
+   await updateLocation(true)
    updateFiles()
 })

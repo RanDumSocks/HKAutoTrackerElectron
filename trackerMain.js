@@ -4,9 +4,9 @@ const fs = require('fs')
 const path = require('path')
 const root = path.resolve(process.env.APPDATA, "../LocalLow/Team Cherry/Hollow Knight/Randomizer 4/Recent/")
 const helperLog = path.resolve(root, "HelperLog.txt")
+const trackerDataFile = path.resolve(root, "TrackerDataPM.txt")
 const settingsFile = path.resolve(root, "settings.txt")
 const modLog = path.resolve(root, "../../ModLog.txt")
-const modLogAppend = path.resolve(root, "../../ModLogAppend.txt")
 const spoilerLog = path.resolve(root, "RawSpoiler.json")
 const dict = path.resolve(__dirname, "mapDict.json")
 const settings = require("./settings.js")
@@ -16,7 +16,7 @@ require("./helper/nodeMenu")
 
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
 const r_helperDoor = /(?<=\[)[a-zA-Z0-9_]*(?=\])/
-const r_locationLogic = /[a-zA-Z0-9_]*(?=(\[| |$))/
+const r_itemLogic = /[a-zA-Z0-9_]*(?=(\[| |$))/
 
 var mapTrackerString = ""
 var rightLocationString = ""
@@ -49,6 +49,7 @@ var transitionTable = {}
 var checkTable = {}
 var avaliableTransitionTable = {}
 var lastLocation = ""
+var exactLocation = ""
 var targetNode = undefined // Node to pathfind to
 var saveData = undefined
 var saveFile = undefined
@@ -127,9 +128,12 @@ classDef unchecked fill:#9e3c03;
 classDef target fill:#06288f;
 `
 
+var itemLogic = {}
 var locationLogic = {}
+var saveLogic = {}
 var oneWayOut = []
 var oneWayIn = []
+var roomNames = new Set()
 
 function loadSpoiler() {
    var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
@@ -140,12 +144,14 @@ function loadSpoiler() {
    } catch (err) {
       return false
    }
-   locationLogic = {}
+   itemLogic = {}
    oneWayOut = []
    oneWayIn = []
+   roomNames = new Set(['Upper_Tram', 'Lower_Tram'])
+   locationLogic = {}
    for (const itemSpoiler of locationData.itemPlacements) {
       var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
-      locationLogic[itemSpoiler.location.logic.name] = logic.match(r_locationLogic)?.[0]
+      itemLogic[itemSpoiler.location.logic.name] = logic.match(r_itemLogic)?.[0]
    }
    for (const transition of locationData.LM.Transitions) {
       if (transition.oneWayType =='OneWayOut') {
@@ -154,6 +160,11 @@ function loadSpoiler() {
       if (transition.oneWayType =='OneWayIn') {
          oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
       }
+      roomNames.add(transition.sceneName)
+      roomNames.add(transition.Name)
+   }
+   for (const data of locationData.LM.Logic) {
+      locationLogic[data.name] = data.logic
    }
 }
 
@@ -170,10 +181,14 @@ function linkSave() {
                
                if (prevSave) { fs.unwatchFile(prevSave) }
                saveData = modFile
+               saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
+               saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
                console.log(`Linked save file ${fileName}`)
 
                fs.watchFile(saveFile, { interval: 1000 }, async (curr, prev) => {
                   saveData = JSON.parse(fs.readFileSync(saveFile))
+                  saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
+                  saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
                   updateTracker()
                   await updateLocation(true)
                   updateFiles()
@@ -192,9 +207,20 @@ function linkSave() {
    }
 }
 
+function linkLogic() {
+   try {
+      saveLogic = JSON.parse(fs.readFileSync(trackerDataFile, 'utf-8').replace(/\,(?!\s*?[\{\[\"\'\w])/g, ''))
+      saveLogic['FALSE'] = 0
+      saveLogic['TRUE'] = 1
+   } catch (err) {
+      console.log("Could not link logic")
+   }
+}
+
 async function start() {
    loadSpoiler()
    linkSave()
+   linkLogic()
    await updateLocation()
    updateTracker()
    updateFiles()
@@ -229,7 +255,58 @@ async function start() {
       await updateLocation(true)
       updateFiles()
    })
+   fs.watchFile(trackerDataFile, { interval: 1000 }, async (curr, prev) => {
+      linkLogic()
+   })
    console.log("Tracker running.")
+}
+
+function getData(str, isRaw) {
+   return isRaw ? saveLogic[str] : saveLogic[str] > 0
+}
+
+function evalLogic(logicString, truthRegex) {
+   var parsedString = logicString
+   parsedString = parsedString.replaceAll(truthRegex, "true")
+   parsedString = parsedString.replaceAll("+", "&&")
+   parsedString = parsedString.replaceAll("|", "||")
+   parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false")
+
+   // Conditional parsing
+   var conditionals = parsedString.match(/[a-zA-Z0-9_]+(?=>|<|=)[>|<|=][0-9]+/g)
+   if (conditionals) {
+      for (const conditional of conditionals) {
+         let r_conditionalData = /[a-zA-Z_]+/
+         let dataValue = getData(conditional.match(r_conditionalData)[0], true)
+         let newConditional = conditional.replace(r_conditionalData, dataValue.toString()).replace('=', '==')
+         parsedString = parsedString.replace(conditional, `(${newConditional})`)
+      }
+   }
+
+   // Variable parsing
+   var variables = parsedString.match(/[a-zA-Z_]+[0-9_]*[a-zA-Z_]*/g)
+   if (variables) {
+      for (const variable of variables) {
+         if (roomNames.has(variable)) {
+            parsedString = parsedString.replace(variable, 'false')
+         } else if (variable != 'true') {
+            parsedString = parsedString.replace(variable, getData(variable).toString())
+         }
+      }
+   }
+
+   return eval(parsedString)
+}
+
+function findRoom(str) {
+   var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
+   if (variables) {
+      for (const variable of variables) {
+         if (roomNames.has(variable)) {
+            return variable
+         }
+      }
+   }
 }
 
 function updateTracker() {
@@ -304,12 +381,12 @@ function updateTracker() {
             startItemChecks = false
          } else {
             var item = line.replaceAll(/\r?\n? /g, "")
-            if (locationLogic[item]) {
+            if (itemLogic[item]) {
 
-               if (checkTable[locationLogic[item]]) {
-                  checkTable[locationLogic[item]] += 1
+               if (checkTable[itemLogic[item]]) {
+                  checkTable[itemLogic[item]] += 1
                } else {
-                  checkTable[locationLogic[item]] = 1
+                  checkTable[itemLogic[item]] = 1
                }
             }
          }
@@ -384,6 +461,17 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       if (!location || !doors) { return false }
       if (onlyReport) { return true }
 
+      { // Guess transition
+         if (lastLocation != location && transitionTable[location]) {
+            for (const [door, toRoom] of Object.entries(transitionTable[location])) {
+               if (toRoom[0] == lastLocation) {
+                  exactLocation = `${location}[${door}]`
+                  break
+               }
+            }
+         }
+      }
+
       lastLocation = location
       for (const [fromDoor, toId] of Object.entries(doors)) {
             var nameFrom = location
@@ -423,6 +511,52 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
    }
 
    { // Nearest Transition
+
+
+      // Smart AI
+      var activeBenches = []
+      var truths = []
+      var r_truths = undefined
+      if (exactLocation) { truths.push(exactLocation) }
+
+      if (settings.getSetting('benchPathfinding')) {
+         // Get benches
+         for (const [benchName, value] of Object.entries(saveData.modData.Benchwarp.visitedBenchScenes)) {
+            if (value) {
+               activeBenches.push(benchName)
+            }
+         }
+         var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|'), 'g')
+         // Build bench logic
+         let benchLogic = []
+         var stringBuilder = ""
+         var nest = 0
+         for (var i = 0; i < locationLogic.Can_Bench.length; i++) {
+            var character = locationLogic.Can_Bench.charAt(i)
+            if (character == "|" && nest == 0) {
+               benchLogic.push(stringBuilder)
+               stringBuilder = ""
+               continue
+            } else if (character == "(") {
+               nest++
+            } else if (character == ")") {
+               nest--
+            }
+            stringBuilder += character
+         }
+   
+         // find true checks
+         for (const key in benchLogic) {
+            const logic = benchLogic[key]
+            evalLogic(logic, r_truth)
+            if (evalLogic(logic, r_truth)) {
+               truths.push(findRoom(logic))
+            }
+         }
+      }
+
+      r_truths = truths.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]')
+
       var BFSqueue = []
       var visited = {}
       var dist = {}

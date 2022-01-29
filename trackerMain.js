@@ -134,7 +134,12 @@ var oneWayIn = []
 function loadSpoiler() {
    var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
    var regexTerms = new RegExp(termsData.join("|"), "g")
-   var locationData = JSON.parse(fs.readFileSync(spoilerLog))
+   var locationData = undefined
+   try {
+      locationData = JSON.parse(fs.readFileSync(spoilerLog))
+   } catch (err) {
+      return false
+   }
    locationLogic = {}
    oneWayOut = []
    oneWayIn = []

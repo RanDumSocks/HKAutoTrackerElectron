@@ -4,6 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const root = path.resolve(process.env.APPDATA, "../LocalLow/Team Cherry/Hollow Knight/Randomizer 4/Recent/")
 const helperLog = path.resolve(root, "HelperLog.txt")
+const settingsFile = path.resolve(root, "settings.txt")
 const modLog = path.resolve(root, "../../ModLog.txt")
 const modLogAppend = path.resolve(root, "../../ModLogAppend.txt")
 const spoilerLog = path.resolve(root, "RawSpoiler.json")
@@ -49,6 +50,8 @@ var checkTable = {}
 var avaliableTransitionTable = {}
 var lastLocation = ""
 var targetNode = undefined // Node to pathfind to
+var saveData = undefined
+var saveFile = undefined
 
 const specialCustom = {
    Crossroads_04: [ 'Salubra Bench', 'bench' ],
@@ -115,7 +118,8 @@ const special = { ...JSON.parse(fs.readFileSync(dict)), ...specialCustom }
 const classDefs = `
 classDef stag fill:#a775d9;
 classDef shop fill:#946513;
-classDef bench fill:#138d94;
+classDef bench fill:#022426;
+classDef benchactive fill:#138d94;
 classDef transition stroke-width:4px,stroke:#d68b00;
 classDef check color:#3ab020;
 classDef last fill:#022e00;
@@ -123,14 +127,13 @@ classDef unchecked fill:#9e3c03;
 classDef target fill:#06288f;
 `
 
-var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
 var locationLogic = {}
 var oneWayOut = []
 var oneWayIn = []
 
-var regexTerms = new RegExp(termsData.join("|"), "g")
-
 function loadSpoiler() {
+   var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
+   var regexTerms = new RegExp(termsData.join("|"), "g")
    var locationData = JSON.parse(fs.readFileSync(spoilerLog))
    locationLogic = {}
    oneWayOut = []
@@ -149,8 +152,44 @@ function loadSpoiler() {
    }
 }
 
+function linkSave() {
+   try {
+      var seed = fs.readFileSync(settingsFile, 'utf-8').match(/(?<="Seed": )[0-9]*/)[0]
+      var files = fs.readdirSync(path.resolve(root, '../../'))
+      files.every( (fileName) => {
+         if ((/^user[0-9]+\.modded\.json$/).test(fileName)) {
+            var prevSave = saveFile
+            saveFile = path.resolve(root, "../../", fileName)
+            let modFile = JSON.parse(fs.readFileSync(saveFile))
+            if (modFile?.modData?.["Randomizer 4"]?.GenerationSettings?.Seed == seed) {
+               
+               if (prevSave) { fs.unwatchFile(prevSave) }
+               saveData = modFile
+               console.log(`Linked save file ${fileName}`)
+
+               fs.watchFile(saveFile, { interval: 1000 }, async (curr, prev) => {
+                  saveData = JSON.parse(fs.readFileSync(saveFile))
+                  updateTracker()
+                  await updateLocation(true)
+                  updateFiles()
+               })
+
+               return false
+            }
+         }
+         return true
+      })
+   } catch (err) {
+      if (err) {
+         console.log("Seed could not be found")
+         return false
+      }
+   }
+}
+
 async function start() {
    loadSpoiler()
+   linkSave()
    await updateLocation()
    updateTracker()
    updateFiles()
@@ -177,6 +216,12 @@ async function start() {
       loadSpoiler()
       updateTracker()
       await updateLocation()
+      updateFiles()
+   })
+   fs.watchFile(settingsFile, { interval: 1000 }, async (curr, prev) => {
+      linkSave()
+      updateTracker()
+      await updateLocation(true)
       updateFiles()
    })
    console.log("Tracker running.")
@@ -507,6 +552,8 @@ function styleRoom(room) {
       name = `${name}:::last`
    } else if (targetNode == room) {
       name = `${name}:::target`
+   } else if (saveData?.modData?.Benchwarp?.visitedBenchScenes?.[room]) {
+      name = `${name}:::benchactive`
    } else {
       name = special[room]?.[1] ? `${name}:::${special[room]?.[1]}` : name
    }

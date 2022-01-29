@@ -93,12 +93,16 @@ const toggleNearestTracker = () => {
    }
 }
 
+const toggleBenchPathfinding = () => {
+   settings.changeSetting('benchPathfinding', !settings.getSetting('benchPathfinding'))
+}
+
 let menuTemplate = [
    {
       label: "Settings",
       submenu: [
          {
-            label: "Graph Orientation",
+            label: "Graph orientation",
             type: "submenu",
             toolTip: "What direction the graph should flow.",
             submenu: [
@@ -172,7 +176,7 @@ let menuTemplate = [
             ],
          },
          {
-            label: "Line Length",
+            label: "Line length",
             type: "submenu",
             toolTip: "Length of the lines connecting nodes.",
             submenu: [
@@ -199,6 +203,13 @@ let menuTemplate = [
                },
             ],
          },
+         {
+            label: "Consider benches for pathfinding",
+            type: "checkbox",
+            id: "benchPathfinding",
+            click: toggleBenchPathfinding,
+            checked: settings.getSetting("benchPathfinding")
+         }
       ],
    },
    {

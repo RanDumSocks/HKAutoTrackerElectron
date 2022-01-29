@@ -7,6 +7,7 @@ exports.defaultOptions = {
    translationType: "full",
    mapOrientation: "LR",
    lineLength: 1,
+   benchPathfinding: false
 }
 
 exports.loadSettings = (write) => {

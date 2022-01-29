@@ -355,15 +355,18 @@ function updateTracker() {
    mapTrackerString = `flowchart ${settings.getSetting('mapOrientation')}\n${classDefs}\n\n${nameString}\n${transitionData}`
 }
 
-async function updateLocation(updateAnyway, onlyReport) {
+async function updateLocation(updateAnyway, onlyReport, forceLast) {
    const r_transitionChange = /(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm
    var location = undefined
 
-   await rLineReader.eachLine(modLog, (line, last) => {
-      location = line.match(r_transitionChange)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
-      if (location) { return false }
-   })
-
+   if (forceLast) {
+      location = lastLocation
+   } else {
+      await rLineReader.eachLine(modLog, (line, last) => {
+         location = line.match(r_transitionChange)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
+         if (location) { return false }
+      })
+   }
 
    if (updateAnyway && !location) { location = lastLocation }
    
@@ -438,6 +441,16 @@ async function updateLocation(updateAnyway, onlyReport) {
       visited[location] = true
       dist[location] = 0
       BFSqueue.push(location)
+
+      if (settings.getSetting('benchPathfinding') && saveData?.modData?.Benchwarp?.visitedBenchScenes) {
+         for (const [benchName, isAvaliable] of Object.entries(saveData?.modData?.Benchwarp?.visitedBenchScenes)) {
+            if (isAvaliable) {
+               visited[benchName] = true
+               dist[benchName] = 0
+               BFSqueue.push(benchName)
+            }
+         }
+      }       
 
       while (BFSqueue.length != 0) {
          var u = BFSqueue.shift()
@@ -617,6 +630,6 @@ ipcRenderer.on('node-menu-apply', async (e, roomName) => {
 ipcRenderer.on('node-set-current', async (e, roomName) => {
    lastLocation = roomName
    updateTracker()
-   await updateLocation(true)
+   await updateLocation(true, false, true)
    updateFiles()
 })

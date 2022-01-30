@@ -133,6 +133,7 @@ var locationLogic = {}
 var saveLogic = {}
 var oneWayOut = []
 var oneWayIn = []
+var sceneNames = new Set() // room[door]
 var roomNames = new Set()
 
 function loadSpoiler() {
@@ -147,7 +148,8 @@ function loadSpoiler() {
    itemLogic = {}
    oneWayOut = []
    oneWayIn = []
-   roomNames = new Set(['Upper_Tram', 'Lower_Tram'])
+   sceneNames = new Set(['Upper_Tram', 'Lower_Tram'])
+   roomNames = new Set()
    locationLogic = {}
    for (const itemSpoiler of locationData.itemPlacements) {
       var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
@@ -160,7 +162,7 @@ function loadSpoiler() {
       if (transition.oneWayType =='OneWayIn') {
          oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
       }
-      roomNames.add(transition.sceneName)
+      sceneNames.add(transition.sceneName)
       roomNames.add(transition.Name)
    }
    for (const data of locationData.LM.Logic) {
@@ -189,8 +191,8 @@ function linkSave() {
                   saveData = JSON.parse(fs.readFileSync(saveFile))
                   saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
                   saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
-                  updateTracker()
                   await updateLocation(true)
+                  updateTracker()
                   updateFiles()
                })
 
@@ -265,9 +267,10 @@ function getData(str, isRaw) {
    return isRaw ? saveLogic[str] : saveLogic[str] > 0
 }
 
-function evalLogic(logicString, truthRegex) {
+function evalLogic(logicString, truthRegexStr) {
+   var truthRegex = new RegExp(truthRegexStr, 'g')
    var parsedString = logicString
-   parsedString = parsedString.replaceAll(truthRegex, "true")
+   parsedString = truthRegexStr != '' ? parsedString.replaceAll(truthRegex, "true") : parsedString
    parsedString = parsedString.replaceAll("+", "&&")
    parsedString = parsedString.replaceAll("|", "||")
    parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false")
@@ -284,25 +287,29 @@ function evalLogic(logicString, truthRegex) {
    }
 
    // Variable parsing
-   var variables = parsedString.match(/[a-zA-Z_]+[0-9_]*[a-zA-Z_]*/g)
+   var variables = parsedString.match(/[a-zA-Z_']+[0-9_]*[a-zA-Z_']*/g)
    if (variables) {
       for (const variable of variables) {
+
          if (roomNames.has(variable)) {
             parsedString = parsedString.replace(variable, 'false')
+         } else if (sceneNames.has(variable)) {
+            parsedString = parsedString.replace(variable, evalLogic(locationLogic[variable], truthRegex).toString())
          } else if (variable != 'true') {
             parsedString = parsedString.replace(variable, getData(variable).toString())
          }
       }
    }
 
+
    return eval(parsedString)
 }
 
-function findRoom(str) {
+function findRoom(str, lookRooms, lookScenes) {
    var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
    if (variables) {
       for (const variable of variables) {
-         if (roomNames.has(variable)) {
+         if ((roomNames.has(variable) && lookRooms) || (sceneNames.has(variable) && lookScenes)) {
             return variable
          }
       }
@@ -516,8 +523,10 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       // Smart AI
       var activeBenches = []
       var truths = []
+      var truthsNames = []
       var r_truths = undefined
       if (exactLocation) { truths.push(exactLocation) }
+      if (location) { truthsNames.push(location) }
 
       if (settings.getSetting('benchPathfinding')) {
          // Get benches
@@ -526,6 +535,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
                activeBenches.push(benchName)
             }
          }
+
          var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|'), 'g')
          // Build bench logic
          let benchLogic = []
@@ -548,9 +558,9 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
          // find true checks
          for (const key in benchLogic) {
             const logic = benchLogic[key]
-            evalLogic(logic, r_truth)
             if (evalLogic(logic, r_truth)) {
-               truths.push(findRoom(logic))
+               truths.push(findRoom(logic, true, true))
+               truthsNames.push(findRoom(logic, true, true).match(/[a-zA-Z0-9_]*(?=\[)?/)[0])
             }
          }
       }
@@ -561,6 +571,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       var visited = {}
       var dist = {}
       var pred = {}
+      var link = {}
 
       var foundTransition = false
       var foundCheck = false
@@ -577,98 +588,106 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       var benchChart = ""
       var targetChart = ""
 
-      visited[location] = true
-      dist[location] = 0
-      BFSqueue.push(location)
+      for (const truth of truths) {
+         visited[truth] = true
+         dist[truth] = 0
+         BFSqueue.push(truth)
+      }
 
-      if (settings.getSetting('benchPathfinding') && saveData?.modData?.Benchwarp?.visitedBenchScenes) {
-         for (const [benchName, isAvaliable] of Object.entries(saveData?.modData?.Benchwarp?.visitedBenchScenes)) {
-            if (isAvaliable) {
-               visited[benchName] = true
-               dist[benchName] = 0
-               BFSqueue.push(benchName)
-            }
+      roomNames.forEach( (roomName) => {
+         var scene = roomName.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
+         if ( !visited[roomName] && truthsNames.includes(scene) && evalLogic(locationLogic[roomName], r_truths)) {
+            truths.push(roomName)
+            visited[roomName] = true
+            dist[roomName] = 0
+            BFSqueue.push(roomName)
          }
-      }       
+      })
+
+      r_truths = truths.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]')
 
       while (BFSqueue.length != 0) {
          var u = BFSqueue.shift()
-         if (!transitionTable[u]) { continue }
-         for (const frontVal of Object.values(transitionTable[u])) {
-            const front = frontVal[0]
-            if (!visited[front]) {
-               visited[front] = true
-               dist[front] = dist[u] + 1
-               pred[front] = u
+         var currRoom = u.match(/[a-zA-Z0-9_]+(?=\[)?/)[0] // Where you can go
+         var currDoor = u.match(/(?<=\[)[a-zA-Z0-9_]+(?=\])/)?.[0]
+         if (!transitionTable[currRoom]?.[currDoor]) { continue }
+         const front = transitionTable[currRoom][currDoor] // Where it leads
+         const frontName = front[0]
+         const frontRoom = front[1]
+         const frontTitle = `${frontName}[${frontRoom}]`
 
-               BFSqueue.push(front)
+         dist[frontTitle] = dist[u] + 1
+         pred[frontTitle] = u
+         visited[frontTitle] = true
 
-               let buildBFSMap = (outStringC) => {
-                  var outString = outStringC
-                  var currPrint = u
-                  var predPrint = pred[u]
-                  while (predPrint) {
-                     var door = ""
-                     for (const [doorTrans, toRoom] of Object.entries(transitionTable[currPrint])) { // Find door
-                        if (toRoom[0] == predPrint) {
-                           door = toRoom[1]
-                           break
-                        }
-                     }
-                     outString += `${styleRoom(predPrint)} -- ${door} --> ${styleRoom(currPrint)}\n${checkRoom(currPrint)}${checkRoom(predPrint)}`
-                     currPrint = predPrint
-                     predPrint = pred[currPrint]
-                  }
-                  if (!transitionTable[front]) { return false }
-                  for (const [doorTrans, toRoom] of Object.entries(transitionTable[front])) {
-                     if (toRoom[0] == u) {
-                        door = toRoom[1]
-                        break
-                     }
-                  }
-                  outString += `${styleRoom(u)} -- ${door} --> ${styleRoom(front)}\n${checkRoom(u)}${checkRoom(front)}`
-                  return outString
-               }
+         r_newTruths = r_truths + `|${frontName}\\[${frontRoom}\\]`
 
-               if (avaliableTransitionTable[front] && !foundTransition) { // Transition path
-                  foundTransition = true
-                  let successBFS = buildBFSMap(transitionString)
-                  if (!successBFS) {
-                     continue
-                  } else {
-                     transitionString = successBFS
-                  }
-               }
+         roomNames.forEach( (roomName) => {
+            var roomScene = roomName.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
+            if ( !visited[roomName] && roomScene == frontName && evalLogic(locationLogic[roomName], r_newTruths)) {
+               visited[roomName] = true
+               link[roomName] = frontTitle
+               BFSqueue.push(roomName)
+            }
+         })
 
-               if (checkTable[front] && !foundCheck) { // Check path
-                  foundCheck = true
-                  let successBFS = buildBFSMap(checkString)
-                  if (!successBFS) {
-                     continue
-                  } else {
-                     checkString = successBFS
-                  }
-               }
-               if (special[front]?.[1] == 'bench' && !foundBench) { // Check bench
-                  foundBench = true
-                  let successBFS = buildBFSMap(benchString)
-                  if (!successBFS) {
-                     continue
-                  } else {
-                     benchString = successBFS
-                  }
-               }
-               if (targetNode == front && !foundTarget) { // Check bench
-                  foundTarget = true
-                  let successBFS = buildBFSMap(targetString)
-                  if (!successBFS) {
-                     continue
-                  } else {
-                     targetString = successBFS
-                  }
-               }
+         let buildBFSMap = (outStringC) => {
+            var outString = outStringC
+            var currPrint = frontTitle
+            var predPrint = pred[frontTitle]
+            var linkPrint = link[predPrint]
+            while (predPrint) {
+               var fromRoom = predPrint.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
+               var fromDoor = predPrint.match(/(?<=\[)[a-zA-Z0-9_]+(?=\])/)[0]
+               var toRoom = currPrint.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
+               outString += `${styleRoom(fromRoom)} -- ${fromDoor} --> ${styleRoom(toRoom)}\n${checkRoom(toRoom)}${checkRoom(fromRoom)}`
+               currPrint = linkPrint
+               predPrint = pred[currPrint]
+               linkPrint = link[predPrint]
+            }
+            return outString
+         }
+
+         if (avaliableTransitionTable[frontName] && !foundTransition) { // Transition path
+            foundTransition = true
+            let successBFS = buildBFSMap(transitionString)
+            if (!successBFS) {
+               continue
+            } else {
+               transitionString = successBFS
             }
          }
+
+         if (checkTable[frontName] && !foundCheck) { // Check path
+            foundCheck = true
+            let successBFS = buildBFSMap(checkString)
+            if (!successBFS) {
+               continue
+            } else {
+               checkString = successBFS
+            }
+         }
+         if (special[frontName]?.[1] == 'bench' && !foundBench) { // Check bench
+            foundBench = true
+            let successBFS = buildBFSMap(benchString)
+            if (!successBFS) {
+               continue
+            } else {
+               benchString = successBFS
+            }
+         }
+         if (targetNode == frontName && !foundTarget) { // Check bench
+            console.log('found')
+            console.log(frontName)
+            foundTarget = true
+            let successBFS = buildBFSMap(targetString)
+            if (!successBFS) {
+               continue
+            } else {
+               targetString = successBFS
+            }
+         }
+
          if (foundTransition && foundCheck && foundBench && foundTarget) { break }
       }
       transitionChart = `flowchart LR\n${classDefs}\n${transitionString}`

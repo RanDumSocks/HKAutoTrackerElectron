@@ -458,33 +458,89 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
    }
 
    if (updateAnyway && !location) { location = lastLocation }
-   
-   { // Local map
-      var doors = transitionTable[location]
-      var secondLayer = []
-      var transitionData = ``
-      var chartLocal = ""
-      if ((lastLocation == location) && !updateAnyway) { return false }
-      if (!location || !doors) { return false }
-      if (onlyReport) { return true }
 
-      { // Guess transition
-         if (lastLocation != location && transitionTable[location]) {
-            for (const [door, toRoom] of Object.entries(transitionTable[location])) {
-               if (toRoom[0] == lastLocation) {
-                  exactLocation = `${location}[${door}]`
-                  break
-               }
+   var doors = transitionTable[location]
+   var secondLayer = []
+   var transitionData = ``
+   var chartLocal = ""
+   if ((lastLocation == location) && !updateAnyway) { return false }
+   if (!location || !doors) { return false }
+   if (onlyReport) { return true }
+
+   { // Guess transition
+      if (lastLocation != location && transitionTable[location]) {
+         for (const [door, toRoom] of Object.entries(transitionTable[location])) {
+            if (toRoom[0] == lastLocation) {
+               exactLocation = `${location}[${door}]`
+               break
             }
          }
       }
+   }
 
+   // Build truth table
+   var activeBenches = []
+   var truths = []
+   var truthsNames = []
+   var r_truths = undefined
+   if (exactLocation) { truths.push(exactLocation) }
+   if (location) { truthsNames.push(location) }
+
+   if (settings.getSetting('benchPathfinding')) {
+      // Get benches
+      for (const [benchName, value] of Object.entries(saveData.modData.Benchwarp.visitedBenchScenes)) {
+         if (value) {
+            activeBenches.push(benchName)
+         }
+      }
+
+      var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|'), 'g')
+      // Build bench logic
+      let benchLogic = []
+      var stringBuilder = ""
+      var nest = 0
+      for (var i = 0; i < locationLogic.Can_Bench.length; i++) {
+         var character = locationLogic.Can_Bench.charAt(i)
+         if (character == "|" && nest == 0) {
+            benchLogic.push(stringBuilder)
+            stringBuilder = ""
+            continue
+         } else if (character == "(") {
+            nest++
+         } else if (character == ")") {
+            nest--
+         }
+         stringBuilder += character
+      }
+
+      // find true checks
+      for (const key in benchLogic) {
+         const logic = benchLogic[key]
+         if (evalLogic(logic, r_truth)) {
+            truths.push(findRoom(logic, true, true))
+            truthsNames.push(findRoom(logic, true, true).match(/[a-zA-Z0-9_]*(?=\[)?/)[0])
+         }
+      }
+   }
+
+   r_truths = truths.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]')
+   
+   { // Local map
+
+      // Local map generation
       lastLocation = location
       for (const [fromDoor, toId] of Object.entries(doors)) {
             var nameFrom = location
             var nameTo = toId[0]
-            transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
-            secondLayer.push(toId[0])
+            if (exactLocation) {
+               if (evalLogic(locationLogic[`${nameFrom}[${fromDoor}]`], r_truths + '|' + exactLocation.replace('[', '\\[').replace(']', '\\]'))) {
+                  transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
+                  secondLayer.push(toId[0])
+               }
+            } else {
+               transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
+               secondLayer.push(toId[0])
+            }
       }
       for (const location2 of secondLayer) {
          doors = transitionTable[location2]
@@ -493,14 +549,20 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             var nameFrom = location2
             var nameTo = toId[0]
             if (nameTo != location) {
-               transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
+              transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
             }
          }
       }
       for (const [transition, transitionCheck] of Object.entries(avaliableTransitionTable)) {
          if (transition == location) {
             for (const door of transitionCheck) {
-               transitionData += `${transition} -- ${door} --> UNCHECKED([UNCHECKED]):::unchecked\n`
+               if (exactLocation) {
+                  if (evalLogic(locationLogic[`${transition}[${door}]`], r_truths + '|' + exactLocation.replace('[', '\\[').replace(']', '\\]'))) {
+                     transitionData += `${transition} -- ${door} --> UNCHECKED([UNCHECKED]):::unchecked\n`
+                  }
+               } else {
+                  transitionData += `${transition} -- ${door} --> UNCHECKED([UNCHECKED]):::unchecked\n`
+               }
             }
          }
       }
@@ -521,52 +583,6 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
 
       // Smart AI
-      var activeBenches = []
-      var truths = []
-      var truthsNames = []
-      var r_truths = undefined
-      if (exactLocation) { truths.push(exactLocation) }
-      if (location) { truthsNames.push(location) }
-
-      if (settings.getSetting('benchPathfinding')) {
-         // Get benches
-         for (const [benchName, value] of Object.entries(saveData.modData.Benchwarp.visitedBenchScenes)) {
-            if (value) {
-               activeBenches.push(benchName)
-            }
-         }
-
-         var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|'), 'g')
-         // Build bench logic
-         let benchLogic = []
-         var stringBuilder = ""
-         var nest = 0
-         for (var i = 0; i < locationLogic.Can_Bench.length; i++) {
-            var character = locationLogic.Can_Bench.charAt(i)
-            if (character == "|" && nest == 0) {
-               benchLogic.push(stringBuilder)
-               stringBuilder = ""
-               continue
-            } else if (character == "(") {
-               nest++
-            } else if (character == ")") {
-               nest--
-            }
-            stringBuilder += character
-         }
-   
-         // find true checks
-         for (const key in benchLogic) {
-            const logic = benchLogic[key]
-            if (evalLogic(logic, r_truth)) {
-               truths.push(findRoom(logic, true, true))
-               truthsNames.push(findRoom(logic, true, true).match(/[a-zA-Z0-9_]*(?=\[)?/)[0])
-            }
-         }
-      }
-
-      r_truths = truths.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]')
-
       var BFSqueue = []
       var visited = {}
       var dist = {}
@@ -648,7 +664,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             return outString
          }
 
-         if (avaliableTransitionTable[frontName] && !foundTransition) { // Transition path
+         if (avaliableTransitionTable[frontName] && !foundTransition && evalLogic(locationLogic[frontTitle], r_newTruths)) { // Transition path
             foundTransition = true
             let successBFS = buildBFSMap(transitionString)
             if (!successBFS) {
@@ -677,8 +693,6 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             }
          }
          if (targetNode == frontName && !foundTarget) { // Check bench
-            console.log('found')
-            console.log(frontName)
             foundTarget = true
             let successBFS = buildBFSMap(targetString)
             if (!successBFS) {

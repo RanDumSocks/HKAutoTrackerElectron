@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, globalShortcut, MessageChannelMain, ipcMain } = require("electron")
 const path = require("path")
 const formatURL = require("url").format
+const open = require('open')
 const settings = require("./settings.js")
 
 var winMain = undefined
@@ -232,6 +233,10 @@ let menuTemplate = [
    {
       label: "Dev Tools",
       role: "toggleDevTools"
+   },
+   {
+      label: "Submit Feedback",
+      click: () => { open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose') }
    }
 ]
 

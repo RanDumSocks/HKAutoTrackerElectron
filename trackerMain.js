@@ -12,6 +12,7 @@ const dict = path.resolve(__dirname, "mapDict.json")
 const settings = require("./settings.js")
 const rLineReader = require('reverse-line-reader')
 require("./helper/nodeMenu")
+var debugOn = false
 
 
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
@@ -267,9 +268,13 @@ function getData(str, isRaw) {
    return isRaw ? saveLogic[str] : saveLogic[str] > 0
 }
 
-function evalLogic(logicString, truthRegexStr) {
+function evalLogic(logicString, truthRegexStr, checkDirection) {
    var truthRegex = new RegExp(truthRegexStr, 'g')
    var parsedString = logicString
+   if (checkDirection) {
+      var reLogic = evalLogic(locationLogic[checkDirection], truthRegexStr)
+      if (!reLogic) { return false }
+   }
    parsedString = truthRegexStr != '' ? parsedString.replaceAll(truthRegex, "true") : parsedString
    parsedString = parsedString.replaceAll("+", "&&")
    parsedString = parsedString.replaceAll("|", "||")
@@ -453,7 +458,9 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
    } else {
       await rLineReader.eachLine(modLog, (line, last) => {
          location = line.match(r_transitionChange)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
-         if (location) { return false }
+         if (location) {
+            return false
+         }
       })
    }
 
@@ -494,7 +501,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
          }
       }
 
-      var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|'), 'g')
+      var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|') + '(\\[[a-zA-Z0-9_]*\\])*', 'g')
       // Build bench logic
       let benchLogic = []
       var stringBuilder = ""
@@ -516,9 +523,11 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       // find true checks
       for (const key in benchLogic) {
          const logic = benchLogic[key]
-         if (evalLogic(logic, r_truth)) {
-            truths.push(findRoom(logic, true, true))
-            truthsNames.push(findRoom(logic, true, true).match(/[a-zA-Z0-9_]*(?=\[)?/)[0])
+         const logicRoom = findRoom(logic, true, true)
+         const logicDirection = findRoom(logic, true, false)
+         if (evalLogic(logic, r_truth, logicDirection)) {
+            truths.push(logicRoom)
+            truthsNames.push(logicRoom.match(/[a-zA-Z0-9_]*(?=\[)?/)[0])
          }
       }
    }
@@ -542,7 +551,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
                secondLayer.push(toId[0])
             }
       }
-      for (const location2 of secondLayer) {
+      /*for (const location2 of secondLayer) {
          doors = transitionTable[location2]
          if (!doors) { continue }
          for (const [fromDoor, toId] of Object.entries(doors)) {
@@ -552,7 +561,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
               transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
             }
          }
-      }
+      }*/
       for (const [transition, transitionCheck] of Object.entries(avaliableTransitionTable)) {
          if (transition == location) {
             for (const door of transitionCheck) {
@@ -805,3 +814,9 @@ ipcRenderer.on('node-set-current', async (e, roomName) => {
    await updateLocation(true, false, true)
    updateFiles()
 })
+
+function debug(...msg) {
+   if (debugOn) {
+      console.log(msg)
+   }
+}

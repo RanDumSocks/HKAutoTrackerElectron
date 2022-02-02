@@ -1,8 +1,9 @@
-const { app, BrowserWindow, Menu, globalShortcut, MessageChannelMain, ipcMain } = require("electron")
+const { app, BrowserWindow, Menu, globalShortcut, MessageChannelMain, ipcMain, dialog } = require("electron")
 const path = require("path")
 const formatURL = require("url").format
 const open = require('open')
 const settings = require("./settings.js")
+const { autoUpdater } = require('electron-updater')
 
 var winMain = undefined
 var winLocal = undefined
@@ -98,7 +99,36 @@ const toggleBenchPathfinding = () => {
    settings.changeSetting('benchPathfinding', !settings.getSetting('benchPathfinding'))
 }
 
-let menuTemplate = [
+{ // Auto updater
+   autoUpdater.on('error', (err) => {
+      console.error(err)
+   })
+
+   autoUpdater.on('update-downloaded', (info) => {
+      sendWin('update-downloaded', info)
+      var option = dialog.showMessageBoxSync(winMain, {
+         message: `${info.releaseName}\n\nNew update downloaded, would you like to restart and update now?`,
+         type: 'question',
+         buttons: ['Yes', 'No'],
+         title: `Update available!`,
+         noLink: true
+      })
+      if (option == 0) {
+         autoUpdater.quitAndInstall()
+      }
+      menuTemplate.push({
+         label: "Update!",
+         click: () => { autoUpdater.quitAndInstall() }
+      })
+      Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+   })
+
+   autoUpdater.on('update-available', () => {
+      sendWin('Update found, downloading in background...')
+   })
+}
+
+var menuTemplate = [
    {
       label: "Settings",
       submenu: [
@@ -231,15 +261,22 @@ let menuTemplate = [
       ]
    },
    {
-      label: "Dev Tools",
-      role: "toggleDevTools"
-   },
-   {
       label: "Submit Feedback",
       click: () => { open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose') }
    }
 ]
+if (process.defaultApp) {
+   menuTemplate.push({
+      label: "Dev Tools",
+      role: "toggleDevTools"
+   })
+}
 
+const sendWin = (id, data) => {
+   if (winMain) {
+      winMain.webContents.postMessage('main-message', [id, data])
+   }
+}
 
 const createWindowMain = () => {
 
@@ -274,16 +311,18 @@ const createWindowMain = () => {
    })
 }
 
-{
-   // Start
-   app.whenReady().then( () => {
-      createWindowMain()
-   })
+app.whenReady().then( () => {
+   createWindowMain()
+   if (!process.defaultApp) {
+      autoUpdater.checkForUpdates()
+   }
+   sendWin('version', app.getVersion())
+})
 
-   app.on("window-all-closed", () => {
-      if (process.platform !== "darwin") app.quit()
-   })
-}
+app.on("window-all-closed", () => {
+   if (process.platform !== "darwin") app.quit()
+})
+
 
 ipcMain.on('node-menu', (e, nodeName) => {
    let menuTemplate = [

@@ -14,7 +14,6 @@ const rLineReader = require('reverse-line-reader')
 require("./helper/nodeMenu")
 var debugOn = false
 
-
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
 const r_helperDoor = /(?<=\[)[a-zA-Z0-9_]*(?=\])/
 const r_itemLogic = /[a-zA-Z0-9_]*(?=(\[| |$))/
@@ -813,6 +812,21 @@ ipcRenderer.on('node-set-current', async (e, roomName) => {
    updateTracker()
    await updateLocation(true, false, true)
    updateFiles()
+})
+
+ipcRenderer.on('main-message', (e, info) => {
+   var id = info[0]
+   var data = info[1]
+   switch (id) {
+      case 'version':
+         window.addEventListener('DOMContentLoaded', () => {
+            document.title = `HKAT v${data}`
+         })
+         break
+   
+      default:
+         break
+   }
 })
 
 function debug(...msg) {

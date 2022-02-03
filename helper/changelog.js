@@ -4,6 +4,8 @@ exports.history = [
 message: `FEATURES
 • Added Changelog
 • Changelog automatically apprears if application detected an update
+• Added 'Find Current Location' in 'View'
+  • Zooms window to the current location node
 
 CHANGES
 • Moved feedback to 'Help' submenu`,

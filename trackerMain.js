@@ -823,6 +823,18 @@ ipcRenderer.on('main-message', (e, info) => {
             document.title = `HKAT v${data}`
          })
          break
+
+      case 'find-location':
+         var lastNode = document.getElementsByClassName('node last')[0]
+         if (lastNode) {
+            console.log(lastNode.offsetTop, lastNode),
+            lastNode.scrollIntoView({
+               behavior: 'smooth'
+            })
+         } else {
+            alert('Location could not be found, try transitioning once or set it manually.')
+         }
+         break
    
       default:
          break

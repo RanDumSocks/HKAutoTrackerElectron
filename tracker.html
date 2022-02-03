@@ -25,12 +25,12 @@
         var output = document.getElementById('mermaidOut')
         try {
           var graph = mermaid.mermaidAPI.render('mermaidOutSVG', graphDef, (svgCode, bindFunction) => {
-          output.innerHTML = svgCode
+            output.innerHTML = svgCode
             var svg = document.getElementById('mermaidOutSVG')
             svg.style.width = getComputedStyle(svg).maxWidth
+            addClick()
+            window.scrollTo(prevScroll.x, prevScroll.y)
           })
-          addClick()
-          window.scrollTo(prevScroll.x, prevScroll.y)
         } catch (err) {
           console.log(err)
         }

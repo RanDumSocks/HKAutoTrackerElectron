@@ -4,10 +4,13 @@ const formatURL = require("url").format
 const open = require('open')
 const settings = require("./settings.js")
 const { autoUpdater } = require('electron-updater')
+const changelog = require('./helper/changelog')
 
 var winMain = undefined
 var winLocal = undefined
 var winNearest = undefined
+
+var version = app.getVersion()
 
 const setOrientation = (menuItem, window, event) => {
    settings.changeSetting("mapOrientation", menuItem.id)
@@ -235,6 +238,10 @@ var menuTemplate = [
             ],
          },
          {
+            label: 'sep',
+            type: 'separator'
+         },
+         {
             label: "Consider benches for pathfinding",
             type: "checkbox",
             id: "benchPathfinding",
@@ -257,13 +264,30 @@ var menuTemplate = [
             type: "checkbox",
             id: "nearestTracker",
             click: toggleNearestTracker
-         }
+         },
+         {
+            label: 'sep',
+            type: 'separator'
+         },
+         {
+            label: "Find Current Location",
+            click: () => { winMain.webContents.postMessage('main-message', ['find-location', {}]) }
+         },
       ]
    },
    {
-      label: "Submit Feedback",
-      click: () => { open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose') }
-   }
+      label: "Help",
+      submenu: [
+         {
+            label: "Submit Feedback",
+            click: () => { open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose') }
+         },
+         {
+            label: "Changelog",
+            click: changelog.showLatest
+         }
+      ]
+   },
 ]
 if (process.defaultApp) {
    menuTemplate.push({
@@ -316,7 +340,14 @@ app.whenReady().then( () => {
    if (!process.defaultApp) {
       autoUpdater.checkForUpdates()
    }
-   sendWin('version', app.getVersion())
+   sendWin('version', version)
+
+   { // Check if updated
+      if (version > settings.getSetting('lastVersion')) {
+         changelog.showLatest()
+      }
+      settings.changeSetting('lastVersion', version)
+   }
 })
 
 app.on("window-all-closed", () => {

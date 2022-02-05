@@ -1,9 +1,14 @@
 const { dialog } = require('electron')
 exports.history = [
 {
+message: `CHANGES
+• Dramatically reduced file size`,
+version: '1.3.5'
+},
+{
 message: `FEATURES
 • Added Changelog
-• Changelog automatically apprears if application detected an update
+• Changelog automatically appears if application detected an update
 • Added 'Find Current Location' in 'View'
   • Zooms window to the current location node
 

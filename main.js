@@ -1,4 +1,4 @@
-const {app, BrowserWindow, Menu} = require('electron')
+const { app, BrowserWindow, Menu } = require('electron')
 const settings = require('./helper/settings')
 const path = require('path')
 const url = require('url')
@@ -10,15 +10,39 @@ var cleanedUp = false
 
 // BrowserWindow objects
 var windows = {
-   main: [undefined, {
-      url: url.format({
-         pathname: path.resolve(__dirname, "tracker.html"),
-         protocol: "file",
-         slashes: true,
-      })
-   }],
-   location: [undefined, {}],
-   nearest: [undefined, {}],
+   main: [
+      undefined,
+      {
+         url: url.format({
+            pathname: path.resolve(__dirname, 'pages/mainTracker.html'),
+            protocol: 'file',
+            slashes: true,
+         }),
+         webPreferences: {
+            preload: path.resolve(__dirname, 'preloads/mainTracker.js'),
+         },
+      },
+   ],
+   local: [
+      undefined,
+      {
+         url: url.format({
+            pathname: path.resolve(__dirname, 'pages/localTracker.html'),
+            protocol: 'file',
+            slashes: true,
+         }),
+      },
+   ],
+   nearest: [
+      undefined,
+      {
+         url: url.format({
+            pathname: path.resolve(__dirname, 'pages/nearestTracker.html'),
+            protocol: 'file',
+            slashes: true,
+         }),
+      },
+   ],
 }
 
 var menuTemplate = [
@@ -140,13 +164,17 @@ var menuTemplate = [
             label: 'Local Tracker',
             type: 'checkbox',
             id: 'localTracker',
-            //click: toggleLocalTracker,
+            click: () => {
+               toggleWindow('local')
+            },
          },
          {
             label: 'Nearest Tracker',
             type: 'checkbox',
             id: 'nearestTracker',
-            //click: toggleNearestTracker,
+            click: () => {
+               toggleWindow('nearest')
+            },
          },
          {
             label: 'sep',
@@ -169,9 +197,7 @@ var menuTemplate = [
          {
             label: 'Submit Feedback',
             click: () => {
-               open(
-                  'https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose'
-               )
+               open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose')
             },
          },
          {
@@ -198,9 +224,27 @@ function toggleWindow(windowName, url) {
    return windowInstance
 }
 
+function sendMessage(windowName, id, data) {
+   let windowInstance = windows[windowName][0]
+   windowInstance.webContents.postMessage(id, data)
+}
+
 app.whenReady().then(() => {
-   toggleWindow('main')
+   let mainWin = toggleWindow('main')
+   sendMessage('main', 'version', version)
+
+   if (process.defaultApp) {
+      menuTemplate.push({
+         label: 'Dev Tools',
+         role: 'toggleDevTools',
+      })
+   }
+
    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+
+   mainWin.on('closed', () => {
+      app.quit()
+   })
 
    app.on('before-quit', (e) => {
       if (!cleanedUp) {

@@ -82,12 +82,10 @@ module.exports = {
 
    // Should only be called on application exit
    writeSettings: () => {
-      console.log(module.exports.options)
       fs.writeFileSync(
          module.exports.settingsPath,
          JSON.stringify(module.exports.options, null, 3)
       )
-      console.log("DONE")
    },
 }
 

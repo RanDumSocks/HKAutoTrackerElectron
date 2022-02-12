@@ -50,7 +50,7 @@ The map is colour coded, these are what the colours mean:
 - Magenta background
 	- Stag stations without a bench
 - Orange background
-        - Shop location 
+	- Shop location 
 - Green text
 	- unchecked reachable item check with number of checks in brackets
 - Orange boarder

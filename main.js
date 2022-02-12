@@ -5,6 +5,8 @@ const url = require('url')
 
 const version = app.getVersion()
 
+// TODO add autoupdate support
+
 // Whether app has cleaned up and can continue termination
 var cleanedUp = false
 
@@ -30,7 +32,7 @@ var windows = {
             pathname: path.resolve(__dirname, 'pages/localTracker.html'),
             protocol: 'file',
             slashes: true,
-         }),
+         }), // TODO: add web preferences
       },
    ],
    nearest: [
@@ -40,7 +42,7 @@ var windows = {
             pathname: path.resolve(__dirname, 'pages/nearestTracker.html'),
             protocol: 'file',
             slashes: true,
-         }),
+         }), // TODO: add web preferences
       },
    ],
 }
@@ -182,7 +184,7 @@ var menuTemplate = [
          },
          {
             label: 'Find Current Location',
-            /*click: () => {
+            /*click: () => { // TODO
                winMain.webContents.postMessage('main-message', [
                   'find-location',
                   {},
@@ -202,7 +204,7 @@ var menuTemplate = [
          },
          {
             label: 'Changelog',
-            //click: changelog.showLatest,
+            //click: changelog.showLatest, // TODO
          },
       ],
    },

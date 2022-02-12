@@ -11,6 +11,7 @@ const modSettingsPath          = path.resolve(rootPath, 'Randomizer 4/Recent/set
 const modLogPath               = path.resolve(rootPath, 'ModLog.txt')
 const spoilerLogPath           = path.resolve(rootPath, 'Randomizer 4/Recent/RawSpoiler.json')
 const transitionDictionaryPath = path.resolve(__dirname, '../resources/mapDict.json')
+var   saveFilePath             = undefined                                                                   // Location of the user's modded save file, can change
 
 const transitionLandmarks = {
    Crossroads_04          : ['Salubra Bench', 'bench'],
@@ -93,8 +94,11 @@ classDef target fill            : #06288f;
    var oneWayIn      = []
    var sceneNames    = new Set()  // string 'room'
    var gateNames     = new Set()  // string 'room[door]'
+
+   var saveData = undefined  // User's modded save data parsed
 }
 
+// Called when user switches between saves
 function loadSpoiler() {
    let r_itemLogic  = /[a-zA-Z0-9_]+(?=(\[| |$))/
    let r_terms      = undefined
@@ -142,6 +146,70 @@ function loadSpoiler() {
       logic[data.name] = data.logic
    }
 }
+
+// Keeps save data updated with internal file watches
+// Called when user switches between saves
+function loadSave() {
+   try {
+      var seed  = fs.readFileSync(modSettingsPath, 'utf-8').match(/(?<="Seed": )[0-9]*/)[0]
+      var files = fs.readdirSync(rootPath)
+
+      files.every( (fileName) => {
+         if ((/^user[0-9]+\.modded\.json$/).test(fileName)) {
+            let previousSaveFilePath = saveFilePath
+            let filePath             = path.resolve(rootPath, fileName)
+            let testFile             = JSON.parse(fs.readFileSync(filePath))  // TODO dont parse, just use a regex test
+            
+            // Find save file with matching seed
+            if (testFile?.modData?.["Randomizer 4"]?.GenerationSettings?.Seed == seed) {
+               if (previousSaveFilePath) { fs.unwatchFile(previousSaveFilePath) }
+               saveData = testFile
+
+               saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
+               saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
+
+               fs.watchFile(saveFilePath, { interval: 1000 }, async (curr, prev) => {
+                  saveData = JSON.parse(fs.readFileSync(saveFilePath))
+
+                  saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
+                  saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
+                  // TODO update apropriate files
+                  /*await updateLocation(true)
+                  updateTracker()
+                  updateFiles()*/
+               })
+
+               return false
+            }
+         }
+
+         return true
+      })
+   } catch (err) {
+      if (err) {
+         console.warn('Save file could not be found')
+         return false
+      }
+   }
+}
+
+// TODO loadLogic
+
+// TODO evalLogic
+
+// TODO findRoomInString
+
+// TODO updateTracker
+
+// TODO updateLocation
+
+// TODO styleRoom
+
+// TODO checkRoom
+
+// TODO updateFiles
+
+// TODO start
 
 { // Message handling
    ipcRenderer.once('version', (e, versionNum) => {

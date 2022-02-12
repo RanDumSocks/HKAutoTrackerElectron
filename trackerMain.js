@@ -1,22 +1,22 @@
 console.log("...Starting tracker...")
 const { ipcRenderer } = require('electron')
-const fs = require('fs')
-const path = require('path')
-const root = path.resolve(process.env.APPDATA, "../LocalLow/Team Cherry/Hollow Knight/Randomizer 4/Recent/")
-const helperLog = path.resolve(root, "HelperLog.txt")
+const fs              = require('fs')
+const path            = require('path')
+const root            = path.resolve(process.env.APPDATA, "../LocalLow/Team Cherry/Hollow Knight/Randomizer 4/Recent/")
+const helperLog       = path.resolve(root, "HelperLog.txt")
 const trackerDataFile = path.resolve(root, "TrackerDataPM.txt")
-const settingsFile = path.resolve(root, "settings.txt")
-const modLog = path.resolve(root, "../../ModLog.txt")
-const spoilerLog = path.resolve(root, "RawSpoiler.json")
-const dict = path.resolve(__dirname, "mapDict.json")
-const settings = require("./settings.js")
-const rLineReader = require('reverse-line-reader')
+const modSettingsPath = path.resolve(root, "settings.txt")
+const modLog          = path.resolve(root, "../../ModLog.txt")
+const spoilerLog      = path.resolve(root, "RawSpoiler.json")
+const dict            = path.resolve(__dirname, "mapDict.json")
+const settings        = require("./settings.js")
+const rLineReader     = require('reverse-line-reader')
 require("./helper/nodeMenu")
 var debugOn = false
 
 const r_helperLocation = /[a-zA-Z0-9_]*(?=\[)/
 const r_helperDoor = /(?<=\[)[a-zA-Z0-9_]*(?=\])/
-const r_itemLogic = /[a-zA-Z0-9_]*(?=(\[| |$))/
+const r_itemLogic = /[a-zA-Z0-9_]+(?=(\[| |$))/
 
 var mapTrackerString = ""
 var rightLocationString = ""
@@ -128,13 +128,13 @@ classDef unchecked fill:#9e3c03;
 classDef target fill:#06288f;
 `
 
-var itemLogic = {}
+var itemLocations = {}
 var locationLogic = {}
 var saveLogic = {}
 var oneWayOut = []
 var oneWayIn = []
 var sceneNames = new Set() // room[door]
-var roomNames = new Set()
+var gateNames = new Set()
 
 function loadSpoiler() {
    var termsData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "terms.json")))
@@ -145,15 +145,15 @@ function loadSpoiler() {
    } catch (err) {
       return false
    }
-   itemLogic = {}
+   itemLocations = {}
    oneWayOut = []
    oneWayIn = []
    sceneNames = new Set(['Upper_Tram', 'Lower_Tram'])
-   roomNames = new Set()
+   gateNames = new Set()
    locationLogic = {}
    for (const itemSpoiler of locationData.itemPlacements) {
       var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
-      itemLogic[itemSpoiler.location.logic.name] = logic.match(r_itemLogic)?.[0]
+      itemLocations[itemSpoiler.location.logic.name] = logic.match(r_itemLogic)?.[0]
    }
    for (const transition of locationData.LM.Transitions) {
       if (transition.oneWayType =='OneWayOut') {
@@ -163,7 +163,7 @@ function loadSpoiler() {
          oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
       }
       sceneNames.add(transition.sceneName)
-      roomNames.add(transition.Name)
+      gateNames.add(transition.Name)
    }
    for (const data of locationData.LM.Logic) {
       locationLogic[data.name] = data.logic
@@ -172,7 +172,7 @@ function loadSpoiler() {
 
 function linkSave() {
    try {
-      var seed = fs.readFileSync(settingsFile, 'utf-8').match(/(?<="Seed": )[0-9]*/)[0]
+      var seed = fs.readFileSync(modSettingsPath, 'utf-8').match(/(?<="Seed": )[0-9]*/)[0]
       var files = fs.readdirSync(path.resolve(root, '../../'))
       files.every( (fileName) => {
          if ((/^user[0-9]+\.modded\.json$/).test(fileName)) {
@@ -239,7 +239,7 @@ async function start() {
          updateFiles()
       }
    })
-   fs.watchFile(settings.settingsFile, { interval: 1000 }, async (curr, prev) => {
+   fs.watchFile(settings.modSettingsPath, { interval: 1000 }, async (curr, prev) => {
       settings.loadSettings(false)
       updateTracker()
       await updateLocation(true)
@@ -251,7 +251,7 @@ async function start() {
       await updateLocation()
       updateFiles()
    })
-   fs.watchFile(settingsFile, { interval: 1000 }, async (curr, prev) => {
+   fs.watchFile(modSettingsPath, { interval: 1000 }, async (curr, prev) => {
       linkSave()
       updateTracker()
       await updateLocation(true)
@@ -295,7 +295,7 @@ function evalLogic(logicString, truthRegexStr, checkDirection) {
    if (variables) {
       for (const variable of variables) {
 
-         if (roomNames.has(variable)) {
+         if (gateNames.has(variable)) {
             parsedString = parsedString.replace(variable, 'false')
          } else if (sceneNames.has(variable)) {
             parsedString = parsedString.replace(variable, evalLogic(locationLogic[variable], truthRegex).toString())
@@ -313,7 +313,7 @@ function findRoom(str, lookRooms, lookScenes) {
    var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
    if (variables) {
       for (const variable of variables) {
-         if ((roomNames.has(variable) && lookRooms) || (sceneNames.has(variable) && lookScenes)) {
+         if ((gateNames.has(variable) && lookRooms) || (sceneNames.has(variable) && lookScenes)) {
             return variable
          }
       }
@@ -392,12 +392,12 @@ function updateTracker() {
             startItemChecks = false
          } else {
             var item = line.replaceAll(/\r?\n? /g, "")
-            if (itemLogic[item]) {
+            if (itemLocations[item]) {
 
-               if (checkTable[itemLogic[item]]) {
-                  checkTable[itemLogic[item]] += 1
+               if (checkTable[itemLocations[item]]) {
+                  checkTable[itemLocations[item]] += 1
                } else {
-                  checkTable[itemLogic[item]] = 1
+                  checkTable[itemLocations[item]] = 1
                }
             }
          }
@@ -618,7 +618,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
          BFSqueue.push(truth)
       }
 
-      roomNames.forEach( (roomName) => {
+      gateNames.forEach( (roomName) => {
          var scene = roomName.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
          if ( !visited[roomName] && truthsNames.includes(scene) && evalLogic(locationLogic[roomName], r_truths)) {
             truths.push(roomName)
@@ -646,7 +646,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
          r_newTruths = r_truths + `|${frontName}\\[${frontRoom}\\]`
 
-         roomNames.forEach( (roomName) => {
+         gateNames.forEach( (roomName) => {
             var roomScene = roomName.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
             if ( !visited[roomName] && roomScene == frontName && evalLogic(locationLogic[roomName], r_newTruths)) {
                visited[roomName] = true

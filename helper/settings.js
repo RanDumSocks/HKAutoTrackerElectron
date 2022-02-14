@@ -1,6 +1,8 @@
-// Settings management, should only be visible to the main process
+// Settings management, should only be writable from the main process
 const path = require('path')
 const fs = require('fs')
+
+const isRenderer = (process && process.type === 'renderer')
 
 module.exports = {
    settingsPath: path.resolve(
@@ -20,6 +22,7 @@ module.exports = {
    },
 
    set translationType(value) {
+      if (isRenderer) { throw 'Cannot change setting values in renderer' }
       if (["full", "basic", "landmark", "none"].includes(value)) {
          this.options.translationType = value
       } else {
@@ -32,6 +35,7 @@ module.exports = {
    },
 
    set mapOrientation(value) {
+      if (isRenderer) { throw 'Cannot change setting values in renderer' }
       if (["TB", "TD", "BT", "RL", "LR"].includes(value)) {
          this.options.mapOrientation = value
       } else {
@@ -44,6 +48,7 @@ module.exports = {
    },
 
    set benchPathfinding(value) {
+      if (isRenderer) { throw 'Cannot change setting values in renderer' }
       if (typeof(value) == 'boolean') {
          this.options.benchPathfinding = value
       } else {
@@ -56,6 +61,7 @@ module.exports = {
    },
 
    set lastVersion(value) {
+      if (isRenderer) { throw 'Cannot change setting values in renderer' }
       this.options.lastVersion = value
    },
 
@@ -71,7 +77,11 @@ module.exports = {
 
       for (const [settingName, value] of Object.entries(userSettings)) {
          if (Object.getOwnPropertyDescriptor(module.exports, settingName)?.set) {
-            module.exports[settingName] = value
+            if (isRenderer) {
+               module.exports.options[settingName] = value
+            } else {
+               module.exports[settingName] = value
+            }
          } else {
             console.log(`Unknown setting ${settingName} found in user settings.`)
          }
@@ -82,6 +92,7 @@ module.exports = {
 
    // Should only be called on application exit
    writeSettings: () => {
+      if (isRenderer) { throw 'Cannot change setting values in renderer' }
       fs.writeFileSync(
          module.exports.settingsPath,
          JSON.stringify(module.exports.options, null, 3)

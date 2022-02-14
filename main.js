@@ -70,6 +70,7 @@ var menuTemplate = [
                   id: 'TB',
                   click: () => {
                      settings.mapOrientation = 'TB'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.mapOrientation == 'TB',
                },
@@ -79,6 +80,7 @@ var menuTemplate = [
                   id: 'LR',
                   click: () => {
                      settings.mapOrientation = 'LR'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.mapOrientation == 'LR',
                },
@@ -88,6 +90,7 @@ var menuTemplate = [
                   id: 'RL',
                   click: () => {
                      settings.mapOrientation = 'RL'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.mapOrientation == 'RL',
                },
@@ -97,6 +100,7 @@ var menuTemplate = [
                   id: 'BT',
                   click: () => {
                      settings.mapOrientation = 'BT'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.mapOrientation == 'BT',
                },
@@ -112,6 +116,7 @@ var menuTemplate = [
                   id: 'full',
                   click: () => {
                      settings.translationType = 'full'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.translationType == 'full',
                },
@@ -121,6 +126,7 @@ var menuTemplate = [
                   id: 'basic',
                   click: () => {
                      settings.translationType = 'basic'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.translationType == 'basic',
                },
@@ -130,6 +136,7 @@ var menuTemplate = [
                   id: 'landmark',
                   click: () => {
                      settings.translationType = 'landmark'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.translationType == 'landmark',
                },
@@ -139,6 +146,7 @@ var menuTemplate = [
                   id: 'none',
                   click: () => {
                      settings.translationType = 'none'
+                     sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.translationType == 'none',
                },
@@ -228,7 +236,7 @@ function toggleWindow(windowName, url) {
 
 function sendMessage(windowName, id, data) {
    let windowInstance = windows[windowName][0]
-   windowInstance.webContents.postMessage(id, data)
+   windowInstance?.webContents.postMessage(id, data)
 }
 
 app.whenReady().then(() => {

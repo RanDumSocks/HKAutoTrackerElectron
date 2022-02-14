@@ -95,19 +95,21 @@ const defaultTransitionTable = {
 }*/
 
 { // Tracker state variables
-   var modLogic      = {}         // name: logic
-   var itemLocations = {}         // itemID: location
-   var oneWayOut     = []         // Transitions which are one way
-   var oneWayIn      = []
-   var sceneNames    = new Set()  // string 'scene'
-   var gateNames     = new Set()  // string 'scene[gate]'
-   var saveVariables = {}         // randomiser logic variables (varName: value)
+   var modLogic                 = {}         // name: logic
+   var itemLocations            = {}         // itemID: location
+   var oneWayOut                = []         // Transitions which are one way
+   var oneWayIn                 = []
+   var sceneNames               = new Set()  // string 'scene'
+   var gateNames                = new Set()  // string 'scene[gate]'
+   var saveVariables            = {}         // randomiser logic variables (varName: value)
+   var checkedTransitionTable   = {}         // fromScene: { fromGate: ['toScene', 'toGate'] }
+   var uncheckedTransitionTable = {}         // scene: [gate]
+   var sceneItemTable           = {}         // scene: [itemID] // NOTE data type change
 
    var saveData = undefined  // Object of user's modded save data
 
-   var checkedTransitionTable   = {}  // fromScene: { fromGate: ['toScene', 'toGate'] }
-   var uncheckedTransitionTable = {}  // scene: [gate]
-   var sceneItemTable           = {}  // scene: [itemID] // NOTE data type change
+   var settings = {} // Settings updated by main process
+
 }
 
 // Called when user switches between saves
@@ -290,6 +292,10 @@ function loadHelper() {
    })
 }
 
+function getSetting(settingName) {
+   ipcRenderer.sendSync('getSetting', settingName)
+}
+
 // NOTE modLogic now passed, not logic string
 // recieve list of true tokens instead of regex
 // no checkDirections parameter
@@ -359,6 +365,9 @@ function findLocationInString(str, lookGates, lookScenes) {
 }
 
 // TODO styleRoom
+function styleScene() {
+   
+}
 
 // TODO checkRoom
 
@@ -375,5 +384,9 @@ function findLocationInString(str, lookGates, lookScenes) {
       window.addEventListener('DOMContentLoaded', () => {
          document.title = `HKAT v${versionNum}`
       })
+   })
+      
+   ipcRenderer.on('setting-change', (e, settingsData) => {
+      settings = settingsData
    })
 }

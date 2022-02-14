@@ -88,12 +88,13 @@ classDef target fill            : #06288f;
 `
 
 { // Tracker state variables
-   var logic         = {}         // name: logic
+   var modLogic      = {}         // name: logic
    var itemLocations = {}         // itemID: room
    var oneWayOut     = []         // Transitions which are one way
    var oneWayIn      = []
    var sceneNames    = new Set()  // string 'room'
    var gateNames     = new Set()  // string 'room[door]'
+   var saveVariables = {}         // randomiser logic variables (varName: value)
 
    var saveData = undefined  // User's modded save data parsed
 }
@@ -193,9 +194,67 @@ function loadSave() {
    }
 }
 
-// TODO loadLogic
+// Called when trackerDataPath file changes
+function loadVariables() {
+   try {
+      saveVariables = JSON.parse(fs.readFileSync(trackerDataPath, 'utf-8').replace(/\,(?!\s*?[\{\[\"\'\w])/g, ''))
+
+      saveVariables['FALSE'] = 0
+      saveVariables['TRUE']  = 1
+   } catch (err) {
+      console.warn("Could not load tracker data")
+   }
+}
 
 // TODO evalLogic
+// CHANGES: modLogic now passed, not logic string
+// recieve list of true tokens instead of regex
+// no checkDirections parameter
+/**
+ * 
+ * @param {string} modLogicName name of the item in logic to compute
+ * @param {Array[string] | RegExp} knownVars known variables or regular expression of assumed true variables
+ */
+function evalLogic(modLogicName, knownVars) {
+   var parsedString = modLogic[modLogicName]
+   var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'))
+
+   parsedString = truthRegexStr != '' ? parsedString.replaceAll(r_known, "true") : parsedString
+   parsedString = parsedString.replaceAll("+", "&&")
+   parsedString = parsedString.replaceAll("|", "||")
+   //parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false") // FIXME may be uneeded, testing required
+
+   // TODO check if some conditionals compare 2 variables and not always a variable and a constant
+   { // Conditional parsing
+      let conditionals = parsedString.match(/[a-zA-Z0-9_]+(?=>|<|=)[>|<|=][0-9]+/g)
+      if (conditionals) {
+         for (const conditional of conditionals) {
+            let r_conditionalData = /[a-zA-Z_]+/
+            let dataValue         = saveVariables[conditional.match(r_conditionalData)[0]]
+            let newConditional    = conditional.replace(r_conditionalData, dataValue.toString()).replace('=', '==')
+
+            parsedString = parsedString.replace(conditional, `(${newConditional})`)
+         }
+      }
+   }
+
+   { // Variable parsing
+      let variables = parsedString.match(/[a-zA-Z_']+[0-9_]*[a-zA-Z_']*/g)
+      if (variables) {
+         for (const variable of variables) {
+            if (gateNames.has(variable)) {
+               parsedString = parsedString.replace(variable, 'false')
+            } else if (sceneNames.has(variable)) {
+               parsedString = parsedString.replace(variable, evalLogic(modLogic[variable], r_known).toString())
+            } else if (variable != 'true') {
+               parsedString = parsedString.replace(variable, (saveVariables[variable] > 0).toString())
+            }
+         }
+      }
+   }
+
+   return eval(parsedString)
+}
 
 // TODO findRoomInString
 

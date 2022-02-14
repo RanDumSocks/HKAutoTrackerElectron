@@ -86,17 +86,28 @@ classDef last fill              : #022e00;
 classDef unchecked fill         : #9e3c03;
 classDef target fill            : #06288f;
 `
+/* TODO figure out if this is needed for pathing
+const defaultTransitionTable = {
+   Ruins2_10: { elevator: ["Ruins2_10b", "elevator"] },
+   Ruins2_10b: { elevator: ["Ruins2_10", "elevator"] },
+   Crossroads_49: { elevator: ["Crossroads_49b", "elevator"] },
+   Crossroads_49b: { elevator: ["Crossroads_49", "elevator"] },
+}*/
 
 { // Tracker state variables
    var modLogic      = {}         // name: logic
-   var itemLocations = {}         // itemID: room
+   var itemLocations = {}         // itemID: location
    var oneWayOut     = []         // Transitions which are one way
    var oneWayIn      = []
-   var sceneNames    = new Set()  // string 'room'
-   var gateNames     = new Set()  // string 'room[door]'
+   var sceneNames    = new Set()  // string 'scene'
+   var gateNames     = new Set()  // string 'scene[gate]'
    var saveVariables = {}         // randomiser logic variables (varName: value)
 
-   var saveData = undefined  // User's modded save data parsed
+   var saveData = undefined  // Object of user's modded save data
+
+   var checkedTransitionTable   = {}  // fromScene: { fromGate: ['toScene', 'toGate'] }
+   var uncheckedTransitionTable = {}  // scene: [gate]
+   var sceneItemTable           = {}  // scene: [itemID] // NOTE data type change
 }
 
 // Called when user switches between saves
@@ -206,14 +217,87 @@ function loadVariables() {
    }
 }
 
-// TODO evalLogic
-// CHANGES: modLogic now passed, not logic string
+function loadHelper() {
+   var helperLog             = undefined
+   var inCheckedTransition   = false
+   var inUncheckedTransition = false
+   var inUncheckedItem       = false
+
+   checkedTransitionTable   = {}
+   uncheckedTransitionTable = {}
+   sceneItemTable           = {}
+
+   try {
+      // HACK ignores out of logic asterist markers
+      helperLog = fs.readFileSync(helperLogPath, 'utf-8').replaceAll(/\*/g, "")
+   } catch (err) { if (err) return }
+
+   helperLog.split(/\r?\n/).forEach( (lineRaw) => {
+      let line = lineRaw.replaceAll(/\r?\n? /g, "") // TODO check if adding replace parameter breaks
+
+      if (inCheckedTransition) {
+         if (line == "") {
+            inCheckedTransition = false
+         } else {
+            let trimmedLine     = line
+            let transitionFrom  = trimmedLine.match(/^[a-zA-Z0-9_]*/)[0]
+            let transitionTo    = trimmedLine.match(/(?<=-->)[a-zA-Z0-9_]*/)[0]
+            let doorTransitions = trimmedLine.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/g)
+            let doorFrom        = doorTransitions[0]
+            let doorTo          = doorTransitions[1]
+            if (transitionTo && transitionFrom && !oneWayOut.includes(`${transitionFrom}:${doorFrom}`)) {
+               if (!checkedTransitionTable[transitionFrom]) { checkedTransitionTable[transitionFrom] = {} }
+               checkedTransitionTable[transitionFrom][doorFrom] = [transitionTo, doorTo]
+            }
+         }
+      }
+      inCheckedTransition = inCheckedTransition ? true : (/CHECKED TRANSITIONS$/).test(line)
+
+      if (inUncheckedTransition) {
+         if (line == "") {
+            inUncheckedTransition = false
+         } else {
+            let scene = line.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
+            let gate  = line.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/)[0]
+
+            if (uncheckedTransitionTable[scene]) {
+               uncheckedTransitionTable[scene].push(gate)
+            } else {
+               uncheckedTransitionTable[scene] = [gate]
+            }
+         }
+      }
+      inUncheckedTransition = inUncheckedTransition ? true : (/UNCHECKED REACHABLE TRANSITIONS$/).test(line)
+
+      if (inUncheckedItem) {
+         if (line == "") {
+            inUncheckedItem = false
+         } else {
+            let item = line
+            if (itemLocations[item]) {
+               if (sceneItemTable[itemLocations[item]]) {
+                  sceneItemTable[itemLocations[item]].push(item)
+               } else {
+                  sceneItemTable[itemLocations[item]] = [item]
+               }
+            }
+         }
+      }
+      if (!inUncheckedItem && r_itemStart.test(line)) {
+         inUncheckedItem = true
+      }
+      inUncheckedItem = inUncheckedItem ? true : (/UNCHECKED REACHABLE LOCATIONS$/).test(line)
+   })
+}
+
+// NOTE modLogic now passed, not logic string
 // recieve list of true tokens instead of regex
 // no checkDirections parameter
 /**
- * 
+ * Evaluates a gate/scene variable pulling data from mod's save data.
  * @param {string} modLogicName name of the item in logic to compute
  * @param {Array[string] | RegExp} knownVars known variables or regular expression of assumed true variables
+ * @returns {boolean} 
  */
 function evalLogic(modLogicName, knownVars) {
    var parsedString = modLogic[modLogicName]
@@ -256,17 +340,33 @@ function evalLogic(modLogicName, knownVars) {
    return eval(parsedString)
 }
 
-// TODO findRoomInString
-
-// TODO updateTracker
-
-// TODO updateLocation
+/**
+ * 
+ * @param {string} str string to search for room/gate
+ * @param {boolean} lookGates whether to look for a gate in the string
+ * @param {boolean} lookScenes whether to look for a scene in the string
+ * @returns {string} found gate/scene
+ */
+function findLocationInString(str, lookGates, lookScenes) {
+   var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
+   if (variables) {
+      for (const variable of variables) {
+         if ((gateNames.has(variable) && lookGates) || (sceneNames.has(variable) && lookScenes)) {
+            return variable
+         }
+      }
+   }
+}
 
 // TODO styleRoom
 
 // TODO checkRoom
 
 // TODO updateFiles
+
+// TODO updateTracker
+
+// TODO updateLocation
 
 // TODO start
 

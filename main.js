@@ -22,6 +22,9 @@ var windows = {
          }),
          webPreferences: {
             preload: path.resolve(__dirname, 'preloads/mainTracker.js'),
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
          },
       },
    ],
@@ -242,6 +245,7 @@ function sendMessage(windowName, id, data) {
 app.whenReady().then(() => {
    let mainWin = toggleWindow('main')
    sendMessage('main', 'version', version)
+   sendMessage('main', 'setting-change', settings.options)
 
    if (process.defaultApp) {
       menuTemplate.push({

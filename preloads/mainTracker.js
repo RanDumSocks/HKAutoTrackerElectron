@@ -76,15 +76,15 @@ const transitionLandmarks = {
 const transitionTranslation = { ...JSON.parse(fs.readFileSync(transitionDictionaryPath)), ...transitionLandmarks }
 
 const mermaidClassDefs = `
-classDef stag fill              : #a775d9;
-classDef shop fill              : #946513;
-classDef bench fill             : #022426;
-classDef benchactive fill       : #138d94;
-classDef transition stroke-width: 4px, stroke: #d68b00;
-classDef check color            : #3ab020;
-classDef last fill              : #022e00;
-classDef unchecked fill         : #9e3c03;
-classDef target fill            : #06288f;
+classDef stag fill:#a775d9;
+classDef shop fill:#946513;
+classDef bench fill:#022426;
+classDef benchactive fill:#138d94;
+classDef transition stroke-width:4px, stroke:#d68b00;
+classDef check color:#3ab020;
+classDef last fill:#022e00;
+classDef unchecked fill:#9e3c03;
+classDef target fill:#06288f;
 `
 /* TODO figure out if this is needed for pathing
 const defaultTransitionTable = {
@@ -105,6 +105,10 @@ const defaultTransitionTable = {
    var checkedTransitionTable   = {}         // fromScene: { fromGate: ['toScene', 'toGate'] }
    var uncheckedTransitionTable = {}         // scene: [gate]
    var sceneItemTable           = {}         // scene: [itemID] // NOTE data type change
+   var currentLocation          = undefined  // Guessed scene or gate player is in
+   var lastLocation             = undefined
+   var targetScene              = undefined  // Manually set target scene
+   var activeBenches            = {}         // ['scene']
 
    var saveData = undefined  // Object of user's modded save data
 
@@ -179,18 +183,12 @@ function loadSave() {
                if (previousSaveFilePath) { fs.unwatchFile(previousSaveFilePath) }
                saveData = testFile
 
-               saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
-               saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
+               updateSaveData()
 
                fs.watchFile(saveFilePath, { interval: 1000 }, async (curr, prev) => {
                   saveData = JSON.parse(fs.readFileSync(saveFilePath))
 
-                  saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
-                  saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
-                  // TODO update apropriate files
-                  /*await updateLocation(true)
-                  updateTracker()
-                  updateFiles()*/
+                  updateSaveData()
                })
 
                return false
@@ -253,7 +251,7 @@ function loadHelper() {
             }
          }
       }
-      inCheckedTransition = inCheckedTransition ? true : (/CHECKED TRANSITIONS$/).test(line)
+      inCheckedTransition = inCheckedTransition ? true : (/CHECKED TRANSITIONS$/).test(lineRaw)
 
       if (inUncheckedTransition) {
          if (line == "") {
@@ -269,7 +267,7 @@ function loadHelper() {
             }
          }
       }
-      inUncheckedTransition = inUncheckedTransition ? true : (/UNCHECKED REACHABLE TRANSITIONS$/).test(line)
+      inUncheckedTransition = inUncheckedTransition ? true : (/UNCHECKED REACHABLE TRANSITIONS$/).test(lineRaw)
 
       if (inUncheckedItem) {
          if (line == "") {
@@ -285,10 +283,7 @@ function loadHelper() {
             }
          }
       }
-      if (!inUncheckedItem && r_itemStart.test(line)) {
-         inUncheckedItem = true
-      }
-      inUncheckedItem = inUncheckedItem ? true : (/UNCHECKED REACHABLE LOCATIONS$/).test(line)
+      inUncheckedItem = inUncheckedItem ? true : (/UNCHECKED REACHABLE LOCATIONS$/).test(lineRaw)
    })
 }
 
@@ -354,6 +349,7 @@ function evalLogic(modLogicName, knownVars) {
  * @returns {string} found gate/scene
  */
 function findLocationInString(str, lookGates, lookScenes) {
+   if (!str) { return false }
    var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
    if (variables) {
       for (const variable of variables) {
@@ -365,19 +361,145 @@ function findLocationInString(str, lookGates, lookScenes) {
 }
 
 // TODO styleRoom
-function styleScene() {
-   
+// Merged with checkRoom
+/**
+ * 
+ * @param {string} sceneName Name of the scene to generate mermaid styles
+ * @returns Array[name, type]
+ */
+function styleScene(sceneName) {
+   var name            = ""
+   var classStyle      = ""
+   var itemCheckNumber = sceneItemTable[sceneName] ? ` [${sceneItemTable[sceneName].length}]` : ""
+   var translationData = transitionTranslation[sceneName]
+   var fullName        = translationData?.[0]
+   var type            = translationData?.[1]
+
+   switch (settings.translationType) {
+      case 'full':
+         name = fullName ? `${sceneName}(["${fullName.replaceAll(/_/g, " ")}${itemCheckNumber}"])` : `${sceneName}(["${sceneName}${itemCheckNumber}"])`
+         break
+      case 'basic':
+         name = fullName && type ? `${sceneName}(["${fullName.replaceAll(/_/g, " ")}${itemCheckNumber}"])` : `${sceneName}(["${sceneName}${itemCheckNumber}"])`
+         break
+      case 'landmark':
+         name = fullName && transitionLandmarks[sceneName] ? `${sceneName}(["${fullName.replaceAll(/_/g, " ")}${itemCheckNumber}"])` : `${sceneName}(["${sceneName}${itemCheckNumber}"])`
+         break
+      case 'none':
+         name = `${sceneName}(["${sceneName}${itemCheckNumber}"])`
+         break
+   }
+
+   if (findLocationInString(currentLocation, false, true) == sceneName) {
+      name = `${name}:::last`
+   } else if (targetScene == sceneName) {
+      name = `${name}:::target`
+   } else if (saveData?.modData?.Benchwarp?.visitedBenchScenes?.[sceneName]) {
+      name = `${name}:::benchactive`
+   } else {
+      name = type ? `${name}:::${type}` : name
+   }
+
+   if (uncheckedTransitionTable[sceneName]) {
+      classStyle += `${sceneName}:::transition\n`
+   }
+   if (sceneItemTable[sceneName]) {
+      classStyle += `${sceneName}:::check\n`
+   }
+
+   return [name == '' ? undefined : name, classStyle == '' ? undefined : classStyle]
 }
 
-// TODO checkRoom
+function updateSaveData() {
 
-// TODO updateFiles
+   activeBenches = {}
+
+   saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
+   saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
+
+   for (const [benchName, value] of Object.entries(saveData.modData.Benchwarp.visitedBenchScenes)) {
+      if (value) {
+         activeBenches.push(benchName)
+      }
+   }
+}
+
+/**
+ * Updates currentLocation
+ * @param {string} manualLocation scene to manually set as location
+ */
+async function updateLocation(manualLocation) {
+   if (manualLocation) {
+      lastLocation    = currentLocation
+      currentLocation = manualLocation
+   } else {
+      await rLineReader.eachLine(modLogPath, (line, last) => {
+         let location = line.match(/(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
+
+         if (location) {
+            lastLocation = currentLocation
+            currentLocation = lastLocation
+            return false
+         }
+      })
+   }
+
+   for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
+      let toScene = toLocation[0]
+
+      if (toScene == lastLocation) {
+         currentLocation = `${currentLocation}[${door}]`
+         break
+      }
+   }
+}
 
 // TODO updateTracker
+function updateMainTracker() {
+   var connections       = {}
+   var mainTrackerString = ""
+   var sceneNames        = ""
+   var sceneTypes        = ""
+   var addedStyles       = []
 
-// TODO updateLocation
+   for (const [sceneFrom, doors] of Object.entries(checkedTransitionTable)) {
+      for (const [gateFrom, toId] of Object.entries(doors)) {
+         let sceneTo        = toId[0]
+         let gateTo         = toId[1]
+         let sceneStyleFrom = styleScene(sceneFrom)
+         let sceneStyleTo   = styleScene(sceneTo)
 
-// TODO start
+         if (connections[`${sceneTo}:${gateTo}`] != `${sceneFrom}:${gateFrom}`) {
+            if (oneWayIn.includes(`${sceneFrom}:${gateFrom}`)) {
+               mainTrackerString += `${sceneFrom} --> ${sceneTo}\n`
+            } else {
+               mainTrackerString += `${sceneFrom} --- ${sceneTo}\n`
+            }
+         }
+
+         connections[`${sceneFrom}:${gateFrom}`] = `${sceneTo}:${gateTo}`
+
+         if (!addedStyles.includes(sceneFrom)) {
+            console.log(sceneStyleFrom)
+            sceneNames += `${sceneStyleFrom[0]}\n`
+            console.log(sceneStyleFrom[1])
+            sceneTypes += sceneStyleFrom[1] ?? ''
+            addedStyles.push(sceneFrom)
+         }
+
+         if (!addedStyles.includes(sceneTo)) {
+            sceneNames += `${sceneStyleTo[0]}\n`
+            console.log(sceneStyleTo[1])
+            sceneTypes += sceneStyleTo[1] ?? ''
+            addedStyles.push(sceneTo)
+         }
+      }
+   }
+
+   document.getElementById('mermaidGraph').innerHTML = `flowchart ${settings.mapOrientation ?? 'LR'}\n${mermaidClassDefs}\n\n${mainTrackerString}\n${sceneNames}\n${sceneTypes}`
+}
+
+// TODO updateFiles
 
 { // Message handling
    ipcRenderer.once('version', (e, versionNum) => {
@@ -388,5 +510,18 @@ function styleScene() {
       
    ipcRenderer.on('setting-change', (e, settingsData) => {
       settings = settingsData
+      updateMainTracker()
+   })
+
+   ipcRenderer.on('set-target', async (e, sceneName) => {
+      targetScene = sceneName
    })
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+   loadSpoiler()
+   loadSave()
+   loadVariables()
+   loadHelper()
+   updateMainTracker()
+})

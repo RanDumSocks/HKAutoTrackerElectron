@@ -104,7 +104,7 @@ const defaultTransitionTable = {
    var saveVariables            = {}         // randomiser logic variables (varName: value)
    var checkedTransitionTable   = {}         // fromScene: { fromGate: ['toScene', 'toGate'] }
    var uncheckedTransitionTable = {}         // scene: [gate]
-   var sceneItemTable           = {}         // scene: [itemID] // NOTE data type change
+   var sceneItemTable           = {}         // scene: [itemID]
    var currentLocation          = undefined  // Guessed scene or gate player is in
    var lastLocation             = undefined
    var targetScene              = undefined  // Manually set target scene
@@ -429,29 +429,37 @@ function updateSaveData() {
  * @param {string} manualLocation scene to manually set as location
  */
 async function updateLocation(manualLocation) {
-   if (manualLocation) {
+   var locationChanged = false
+
+   if (manualLocation && manualLocation != currentLocation) {
       lastLocation    = currentLocation
       currentLocation = manualLocation
+      locationChanged = true
    } else {
       await rLineReader.eachLine(modLogPath, (line, last) => {
          let location = line.match(/(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
 
-         if (location) {
+         if (location && location != currentLocation) {
             lastLocation = currentLocation
             currentLocation = lastLocation
+            locationChanged = true
             return false
          }
       })
    }
 
-   for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
-      let toScene = toLocation[0]
-
-      if (toScene == lastLocation) {
-         currentLocation = `${currentLocation}[${door}]`
-         break
+   if (locationChanged) {
+      for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
+         let toScene = toLocation[0]
+   
+         if (toScene == lastLocation) {
+            currentLocation = `${currentLocation}[${door}]`
+            break
+         }
       }
    }
+
+   return locationChanged
 }
 
 // TODO updateTracker
@@ -480,18 +488,14 @@ function updateMainTracker() {
          connections[`${sceneFrom}:${gateFrom}`] = `${sceneTo}:${gateTo}`
 
          if (!addedStyles.includes(sceneFrom)) {
-            console.log(sceneStyleFrom)
             sceneNames += `${sceneStyleFrom[0]}\n`
-            console.log(sceneStyleFrom[1])
             sceneTypes += sceneStyleFrom[1] ?? ''
             addedStyles.push(sceneFrom)
          }
 
          if (!addedStyles.includes(sceneTo)) {
             sceneNames += `${sceneStyleTo[0]}\n`
-            console.log(sceneStyleTo[1])
             sceneTypes += sceneStyleTo[1] ?? ''
-            addedStyles.push(sceneTo)
          }
       }
    }
@@ -499,7 +503,14 @@ function updateMainTracker() {
    document.getElementById('mermaidGraph').innerHTML = `flowchart ${settings.mapOrientation ?? 'LR'}\n${mermaidClassDefs}\n\n${mainTrackerString}\n${sceneNames}\n${sceneTypes}`
 }
 
-// TODO updateFiles
+function reloadTracker() {
+   loadSave()
+   loadSpoiler()
+   loadVariables()
+   loadHelper()
+   updateMainTracker()
+   // update local and nearest
+}
 
 { // Message handling
    ipcRenderer.once('version', (e, versionNum) => {
@@ -510,7 +521,9 @@ function updateMainTracker() {
       
    ipcRenderer.on('setting-change', (e, settingsData) => {
       settings = settingsData
-      updateMainTracker()
+      if (document.readyState === 'interactive') {
+         updateMainTracker()
+      }
    })
 
    ipcRenderer.on('set-target', async (e, sceneName) => {
@@ -519,9 +532,33 @@ function updateMainTracker() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-   loadSpoiler()
-   loadSave()
-   loadVariables()
-   loadHelper()
-   updateMainTracker()
+   reloadTracker()
+
+   fs.watchFile(helperLogPath, { interval: 500 }, async (curr, prev) => {
+      loadHelper()
+      updateMainTracker()
+      // update local and nearest
+   })
+
+   fs.watchFile(trackerDataPath, { interval: 500 }, async (curr, prev) => {
+      loadVariables()
+      //update local and nearest
+   })
+
+   fs.watchFile(modSettingsPath, { interval: 500 }, async (curr, prev) => {
+      reloadTracker()
+   })
+
+   fs.watchFile(modLogPath, { interval: 500 }, async (curr, prev) => {
+      if (updateLocation()) {
+         updateMainTracker()
+         //update local and nearest
+      }
+   })
+
+   /* Should fire when modSettingsPath changes
+   fs.watchFile(spoilerLogPath , { interval: 500 }, async (curr, prev) => {
+      reloadTracker()
+   })
+   */
 })

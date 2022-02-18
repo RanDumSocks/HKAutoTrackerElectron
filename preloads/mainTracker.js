@@ -108,7 +108,8 @@ const defaultTransitionTable = {
    var currentLocation          = undefined  // Guessed scene or gate player is in
    var lastLocation             = undefined
    var targetScene              = undefined  // Manually set target scene
-   var activeBenches            = {}         // ['scene']
+   var activeBenches            = []         // ['scene']
+   var benchLogic               = []         // Regex of transitions one can reach from a bench
 
    var saveData = undefined  // Object of user's modded save data
 
@@ -132,6 +133,9 @@ function loadSpoiler() {
    itemLocations = {}
    oneWayOut     = []
    oneWayIn      = []
+   modLogic      = {}
+   sceneNames    = new Set(['Upper_Tram', 'Lower_Tram'])
+   gateNames     = new Set()
 
    // Find transition data, scenes, rooms, and one ways
    for (const transition of locationData.LM.Transitions) {
@@ -161,7 +165,7 @@ function loadSpoiler() {
    }
 
    for (const data of locationData.LM.Logic) {
-      logic[data.name] = data.logic
+      modLogic[data.name] = data.logic
    }
 }
 
@@ -200,6 +204,7 @@ function loadSave() {
    } catch (err) {
       if (err) {
          console.warn('Save file could not be found')
+         console.warn(err)
          return false
       }
    }
@@ -304,7 +309,7 @@ function evalLogic(modLogicName, knownVars) {
    var parsedString = modLogic[modLogicName]
    var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'))
 
-   parsedString = truthRegexStr != '' ? parsedString.replaceAll(r_known, "true") : parsedString
+   parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
    parsedString = parsedString.replaceAll("+", "&&")
    parsedString = parsedString.replaceAll("|", "||")
    //parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false") // FIXME may be uneeded, testing required
@@ -324,13 +329,13 @@ function evalLogic(modLogicName, knownVars) {
    }
 
    { // Variable parsing
-      let variables = parsedString.match(/[a-zA-Z_']+[0-9_]*[a-zA-Z_']*/g)
+      let variables = parsedString.match(/[a-zA-Z0-9_'\[\]]+/g)
       if (variables) {
          for (const variable of variables) {
             if (gateNames.has(variable)) {
                parsedString = parsedString.replace(variable, 'false')
             } else if (sceneNames.has(variable)) {
-               parsedString = parsedString.replace(variable, evalLogic(modLogic[variable], r_known).toString())
+               parsedString = parsedString.replace(variable, evalLogic(variable, r_known).toString())
             } else if (variable != 'true') {
                parsedString = parsedString.replace(variable, (saveVariables[variable] > 0).toString())
             }
@@ -358,6 +363,7 @@ function findLocationInString(str, lookGates, lookScenes) {
          }
       }
    }
+   return undefined
 }
 
 // TODO styleRoom
@@ -412,7 +418,7 @@ function styleScene(sceneName) {
 
 function updateSaveData() {
 
-   activeBenches = {}
+   activeBenches = []
 
    saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
    saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
@@ -421,6 +427,39 @@ function updateSaveData() {
       if (value) {
          activeBenches.push(benchName)
       }
+   }
+
+   // TODO build bench logic
+   { // Bench Logic
+      let r_truth        = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|') + '(\\[[a-zA-Z0-9_]*\\])*', 'g')
+      let benchLogicPart = []
+      let stringBuilder  = ""
+      let nest           = 0
+
+      for (var i = 0; i < modLogic.Can_Bench.length; i++) {
+         var character = modLogic.Can_Bench.charAt(i)
+         if (character == "|" && nest == 0) {
+            benchLogicPart.push(stringBuilder)
+            stringBuilder = ""
+            continue
+         } else if (character == "(") {
+            nest++
+         } else if (character == ")") {
+            nest--
+         }
+         stringBuilder += character
+      }
+
+      for (const key in benchLogicPart) {
+         let logic         = benchLogicPart[key]
+         let logicLocation = findLocationInString(logic, true, true)
+         let logicGate     = findLocationInString(logic, true, false)
+
+         if ((!logicGate || evalLogic(logicGate, r_truth)) && evalLogic(logicLocation, r_truth)) {
+            benchLogic.push(logicLocation)
+         }
+      }
+      
    }
 }
 
@@ -503,10 +542,16 @@ function updateMainTracker() {
    document.getElementById('mermaidGraph').innerHTML = `flowchart ${settings.mapOrientation ?? 'LR'}\n${mermaidClassDefs}\n\n${mainTrackerString}\n${sceneNames}\n${sceneTypes}`
 }
 
+function updateLocalTracker() {
+   var currentScene = findLocationInString(currentLocation, false, true)
+   var currentGate  = findLocationInString(currentLocation, true, false)
+
+}
+
 function reloadTracker() {
-   loadSave()
    loadSpoiler()
    loadVariables()
+   loadSave()
    loadHelper()
    updateMainTracker()
    // update local and nearest

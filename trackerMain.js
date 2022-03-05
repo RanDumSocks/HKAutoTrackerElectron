@@ -498,11 +498,10 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
    if (settings.getSetting('benchPathfinding')) {
       // Get benches
-      for (const [benchName, value] of Object.entries(saveData.modData.Benchwarp.visitedBenchScenes)) {
-         if (value) {
-            activeBenches.push(benchName)
-         }
+      for (const data of saveData.modData.Benchwarp.visitedBenchScenes) {
+         activeBenches.push(data.SceneName)
       }
+      console.log(activeBenches)
 
       var r_truth = undefined
       if (activeBenches.length > 0) {
@@ -752,7 +751,7 @@ function styleRoom(room) {
       name = `${name}:::last`
    } else if (targetNode == room) {
       name = `${name}:::target`
-   } else if (saveData?.modData?.Benchwarp?.visitedBenchScenes?.[room]) {
+   } else if (saveData?.modData?.Benchwarp?.visitedBenchScenes?.some(e => e.SceneName == room)) {
       name = `${name}:::benchactive`
    } else {
       name = special[room]?.[1] ? `${name}:::${special[room]?.[1]}` : name

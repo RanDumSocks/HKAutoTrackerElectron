@@ -2,6 +2,11 @@ const { dialog } = require('electron')
 exports.history = [
 {
 message: `BUGFIXES
+• Now works with updated benchwarp mod`,
+version: '1.3.7'
+},
+{
+message: `BUGFIXES
 • Fixed some item locations not being tied to rooms
 • Updated to Randomiser v4.0.3`,
 version: '1.3.6'

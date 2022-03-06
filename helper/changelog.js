@@ -1,6 +1,12 @@
 const { dialog } = require('electron')
 exports.history = [
 {
+message: `BUGFIXES
+• Fixed some item locations not being tied to rooms
+• Updated to Randomiser v4.0.3`,
+version: '1.3.6'
+},
+{
 message: `CHANGES
 • Dramatically reduced file size`,
 version: '1.3.5'

@@ -4,7 +4,7 @@ const fs              = require('fs')
 const path            = require('path')
 const root            = path.resolve(process.env.APPDATA, "../LocalLow/Team Cherry/Hollow Knight/Randomizer 4/Recent/")
 const helperLog       = path.resolve(root, "HelperLog.txt")
-const trackerDataFile = path.resolve(root, "TrackerDataPM.txt")
+const trackerDataPath = path.resolve(root, "TrackerDataPM.txt")
 const modSettingsPath = path.resolve(root, "settings.txt")
 const modLog          = path.resolve(root, "../../ModLog.txt")
 const spoilerLog      = path.resolve(root, "RawSpoiler.json")
@@ -45,9 +45,9 @@ const defaultTransitionTable = {
    Crossroads_49: { elevator: ["Crossroads_49b", "elevator"] },
    Crossroads_49b: { elevator: ["Crossroads_49", "elevator"] },
 }
-var transitionTable = {}
-var checkTable = {}
-var avaliableTransitionTable = {}
+var checkedTransitionTable = {}
+var sceneItemTable = {}
+var uncheckedTransitionTable = {}
 var lastLocation = ""
 var exactLocation = ""
 var targetNode = undefined // Node to pathfind to
@@ -129,8 +129,8 @@ classDef target fill:#06288f;
 `
 
 var itemLocations = {}
-var locationLogic = {}
-var saveLogic = {}
+var modLogic = {}
+var saveVariables = {}
 var oneWayOut = []
 var oneWayIn = []
 var sceneNames = new Set() // room[door]
@@ -150,23 +150,23 @@ function loadSpoiler() {
    oneWayIn = []
    sceneNames = new Set(['Upper_Tram', 'Lower_Tram'])
    gateNames = new Set()
-   locationLogic = {}
+   modLogic = {}
    for (const itemSpoiler of locationData.itemPlacements) {
-      var logic = itemSpoiler.location.logic.logic.replaceAll(regexTerms, "")
-      itemLocations[itemSpoiler.location.logic.name] = logic.match(r_itemLogic)?.[0]
+      var logic = itemSpoiler.Location.logic.Logic.replaceAll(regexTerms, "")
+      itemLocations[itemSpoiler.Location.logic.Name] = logic.match(r_itemLogic)?.[0]
    }
-   for (const transition of locationData.LM.Transitions) {
-      if (transition.oneWayType =='OneWayOut') {
-         oneWayOut.push(`${transition.sceneName}:${transition.gateName}`)
+   for (const transition of locationData.transitionPlacements) {
+      if (transition.Target.TransitionDef.Sides == 'OneWayOut') {
+         oneWayOut.push(`${transition.Target.TransitionDef.SceneName}:${transition.Target.TransitionDef.DoorName}`)
       }
-      if (transition.oneWayType =='OneWayIn') {
-         oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
+      if (transition.Target.TransitionDef.Sides == 'OneWayIn') {
+         oneWayIn.push(`${transition.Target.TransitionDef.SceneName}:${transition.Target.TransitionDef.DoorName}`)
       }
-      sceneNames.add(transition.sceneName)
-      gateNames.add(transition.Name)
+      sceneNames.add(transition.Target.TransitionDef.SceneName)
+      gateNames.add(transition.Target.Name)
    }
    for (const data of locationData.LM.Logic) {
-      locationLogic[data.name] = data.logic
+      modLogic[data.name] = data.logic
    }
 }
 
@@ -179,7 +179,9 @@ function linkSave() {
             var prevSave = saveFile
             saveFile = path.resolve(root, "../../", fileName)
             let modFile = JSON.parse(fs.readFileSync(saveFile))
+            console.log(saveFile)
             if (modFile?.modData?.["Randomizer 4"]?.GenerationSettings?.Seed == seed) {
+               console.log('linked')
                
                if (prevSave) { fs.unwatchFile(prevSave) }
                saveData = modFile
@@ -209,11 +211,11 @@ function linkSave() {
    }
 }
 
-function linkLogic() {
+function loadVariables() {
    try {
-      saveLogic = JSON.parse(fs.readFileSync(trackerDataFile, 'utf-8').replace(/\,(?!\s*?[\{\[\"\'\w])/g, ''))
-      saveLogic['FALSE'] = 0
-      saveLogic['TRUE'] = 1
+      saveVariables = JSON.parse(fs.readFileSync(trackerDataPath, 'utf-8').replace(/\,(?!\s*?[\{\[\"\'\w])/g, ''))
+      saveVariables['FALSE'] = 0
+      saveVariables['TRUE'] = 1
    } catch (err) {
       console.log("Could not link logic")
    }
@@ -222,7 +224,7 @@ function linkLogic() {
 async function start() {
    loadSpoiler()
    linkSave()
-   linkLogic()
+   loadVariables()
    await updateLocation()
    updateTracker()
    updateFiles()
@@ -239,7 +241,7 @@ async function start() {
          updateFiles()
       }
    })
-   fs.watchFile(settings.modSettingsPath, { interval: 1000 }, async (curr, prev) => {
+   fs.watchFile(settings.settingsFile, { interval: 1000 }, async (curr, prev) => {
       settings.loadSettings(false)
       updateTracker()
       await updateLocation(true)
@@ -257,27 +259,27 @@ async function start() {
       await updateLocation(true)
       updateFiles()
    })
-   fs.watchFile(trackerDataFile, { interval: 1000 }, async (curr, prev) => {
-      linkLogic()
+   fs.watchFile(trackerDataPath, { interval: 1000 }, async (curr, prev) => {
+      loadVariables()
    })
    console.log("Tracker running.")
 }
 
 function getData(str, isRaw) {
-   return isRaw ? saveLogic[str] : saveLogic[str] > 0
+   return isRaw ? saveVariables[str] : saveVariables[str] > 0
 }
 
 function evalLogic(logicString, truthRegexStr, checkDirection) {
-   var truthRegex = new RegExp(truthRegexStr, 'g')
+   var r_known = truthRegexStr ? new RegExp(truthRegexStr, 'g') : undefined
    var parsedString = logicString
    if (checkDirection) {
-      var reLogic = evalLogic(locationLogic[checkDirection], truthRegexStr)
+      var reLogic = evalLogic(modLogic[checkDirection], truthRegexStr)
       if (!reLogic) { return false }
    }
-   parsedString = truthRegexStr != '' ? parsedString.replaceAll(truthRegex, "true") : parsedString
+   parsedString = truthRegexStr != '' && r_known ? parsedString.replaceAll(r_known, "true") : parsedString
    parsedString = parsedString.replaceAll("+", "&&")
    parsedString = parsedString.replaceAll("|", "||")
-   parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false")
+   parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false") // FIXME may be uneeded, testing required
 
    // Conditional parsing
    var conditionals = parsedString.match(/[a-zA-Z0-9_]+(?=>|<|=)[>|<|=][0-9]+/g)
@@ -298,22 +300,21 @@ function evalLogic(logicString, truthRegexStr, checkDirection) {
          if (gateNames.has(variable)) {
             parsedString = parsedString.replace(variable, 'false')
          } else if (sceneNames.has(variable)) {
-            parsedString = parsedString.replace(variable, evalLogic(locationLogic[variable], truthRegex).toString())
+            parsedString = parsedString.replace(variable, evalLogic(modLogic[variable], r_known).toString())
          } else if (variable != 'true') {
             parsedString = parsedString.replace(variable, getData(variable).toString())
          }
       }
    }
 
-
    return eval(parsedString)
 }
 
-function findRoom(str, lookRooms, lookScenes) {
+function findRoom(str, lookGates, lookScenes) {
    var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
    if (variables) {
       for (const variable of variables) {
-         if ((gateNames.has(variable) && lookRooms) || (sceneNames.has(variable) && lookScenes)) {
+         if ((gateNames.has(variable) && lookGates) || (sceneNames.has(variable) && lookScenes)) {
             return variable
          }
       }
@@ -323,12 +324,14 @@ function findRoom(str, lookRooms, lookScenes) {
 function updateTracker() {
    var transitionData = ""
    rightLocationString = ""
-   checkTable = {}
-   avaliableTransitionTable = {}
+   sceneItemTable = {}
+   uncheckedTransitionTable = {}
    addedStyles = []
    addedNames = []
    nameString = ""
-   transitionTable = JSON.parse(JSON.stringify(defaultTransitionTable))
+   checkedTransitionTable = JSON.parse(JSON.stringify(defaultTransitionTable))
+
+   /* #region loadHelper*/
    var helperLogFile = undefined
    try {
        helperLogFile = fs.readFileSync(helperLog, 'utf-8').replaceAll(/\*/g, "")
@@ -337,7 +340,7 @@ function updateTracker() {
    }
    if (!helperLogFile) { return }
 
-   var startInfo = false
+   var inUncheckedTransition = false
    var startItemChecks = false
    var startTransition = false
    const r_transStart = /UNCHECKED REACHABLE TRANSITIONS$/
@@ -358,8 +361,8 @@ function updateTracker() {
             var doorFrom = trimmedLine.match(r_doorTransitions)[0]
             var doorTo = trimmedLine.match(r_doorTransitions)[1]
             if (transitionTo && transitionFrom && !oneWayOut.includes(`${transitionFrom}:${doorFrom}`)) {
-               if (!transitionTable[transitionFrom]) { transitionTable[transitionFrom] = {} }
-               transitionTable[transitionFrom][doorFrom] = [transitionTo, doorTo]
+               if (!checkedTransitionTable[transitionFrom]) { checkedTransitionTable[transitionFrom] = {} }
+               checkedTransitionTable[transitionFrom][doorFrom] = [transitionTo, doorTo]
             }
          }
       }
@@ -367,26 +370,27 @@ function updateTracker() {
          startTransition = true
       }
 
-      if (startInfo) {
+      if (inUncheckedTransition) {
          if (line.replaceAll(/\r?\n? /g) == "") {
-            startInfo = false
+            inUncheckedTransition = false
          } else {
             var transitionLocation = line.match(r_helperLocation)[0]
             var transitionDoor = line.match(r_helperDoor)[0]
 
-            if (avaliableTransitionTable[transitionLocation]) {
-               avaliableTransitionTable[transitionLocation].push(transitionDoor)
+            if (uncheckedTransitionTable[transitionLocation]) {
+               uncheckedTransitionTable[transitionLocation].push(transitionDoor)
             } else {
-               avaliableTransitionTable[transitionLocation] = [transitionDoor]
+               uncheckedTransitionTable[transitionLocation] = [transitionDoor]
             }
             if (r_right.test(line)) {
                rightLocationString += `- ${transitionLocation}\n`
             }
          }
       }
-      if (!startInfo && r_transStart.test(line)) {
-         startInfo = true
+      if (!inUncheckedTransition && r_transStart.test(line)) {
+         inUncheckedTransition = true
       }
+
       if (startItemChecks) {
          if (line.replaceAll(/\r?\n? /g) == "") {
             startItemChecks = false
@@ -394,10 +398,10 @@ function updateTracker() {
             var item = line.replaceAll(/\r?\n? /g, "")
             if (itemLocations[item]) {
 
-               if (checkTable[itemLocations[item]]) {
-                  checkTable[itemLocations[item]] += 1
+               if (sceneItemTable[itemLocations[item]]) {
+                  sceneItemTable[itemLocations[item]] += 1
                } else {
-                  checkTable[itemLocations[item]] = 1
+                  sceneItemTable[itemLocations[item]] = 1
                }
             }
          }
@@ -406,40 +410,40 @@ function updateTracker() {
          startItemChecks = true
       }
    })
+   /* #endregion */
 
    var connections = {}
-   for (const [location, doors] of Object.entries(transitionTable)) {
+   for (const [sceneFrom, doors] of Object.entries(checkedTransitionTable)) {
       var subgraph = ``
-      for (const [fromDoor, toId] of Object.entries(doors)) {
-         if (connections[`${toId[0]}:${toId[1]}`] != `${location}:${fromDoor}`) {
-            var nameFrom = location
+      for (const [gateFrom, toId] of Object.entries(doors)) {
+         if (connections[`${toId[0]}:${toId[1]}`] != `${sceneFrom}:${gateFrom}`) {
             var nameTo = toId[0]
             var length = settings.getSetting('lineLength') == "normal" ? "" : (settings.getSetting('lineLength') == "medium" ? "-" : "--")
-            if (oneWayIn.includes(`${location}:${fromDoor}`)) {
-               subgraph += `${nameFrom} --${length}> ${nameTo}\n`
+            if (oneWayIn.includes(`${sceneFrom}:${gateFrom}`)) {
+               subgraph += `${sceneFrom} --${length}> ${nameTo}\n`
             } else {
-               subgraph += `${nameFrom} --${length}- ${nameTo}\n`
+               subgraph += `${sceneFrom} --${length}- ${nameTo}\n`
             }
 
-            var fromCheck = checkRoom(nameFrom)
+            var fromCheck = checkRoom(sceneFrom)
             var toCheck = checkRoom(nameTo)
-            if (!addedStyles.includes(nameFrom)) {
-               addedStyles.push(nameFrom)
+            if (!addedStyles.includes(sceneFrom)) {
+               addedStyles.push(sceneFrom)
                subgraph += fromCheck
             }
             if (!addedStyles.includes(nameTo)) {
                addedStyles.push(nameTo)
                subgraph += toCheck
             }
-            if (!addedNames.includes(nameFrom)) {
-               addedNames.push(nameFrom)
-               nameString += `${styleRoom(nameFrom)}\n`
+            if (!addedNames.includes(sceneFrom)) {
+               addedNames.push(sceneFrom)
+               nameString += `${styleRoom(sceneFrom)}\n`
             }
             if (!addedNames.includes(nameTo)) {
                addedNames.push(nameTo)
                nameString += `${styleRoom(nameTo)}\n`
             }
-            connections[`${location}:${fromDoor}`] = `${toId[0]}:${toId[1]}`
+            connections[`${sceneFrom}:${gateFrom}`] = `${toId[0]}:${toId[1]}`
          }
       }
       transitionData += subgraph
@@ -465,7 +469,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
    if (updateAnyway && !location) { location = lastLocation }
 
-   var doors = transitionTable[location]
+   var doors = checkedTransitionTable[location]
    var secondLayer = []
    var transitionData = ``
    var chartLocal = ""
@@ -474,8 +478,8 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
    if (onlyReport) { return true }
 
    { // Guess transition
-      if (lastLocation != location && transitionTable[location]) {
-         for (const [door, toRoom] of Object.entries(transitionTable[location])) {
+      if (lastLocation != location && checkedTransitionTable[location]) {
+         for (const [door, toRoom] of Object.entries(checkedTransitionTable[location])) {
             if (toRoom[0] == lastLocation) {
                exactLocation = `${location}[${door}]`
                break
@@ -500,15 +504,18 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
          }
       }
 
-      var r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|') + '(\\[[a-zA-Z0-9_]*\\])*', 'g')
+      var r_truth = undefined
+      if (activeBenches.length > 0) {
+         r_truth = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|') + '(\\[[a-zA-Z0-9_]*\\])*', 'g')
+      }
       // Build bench logic
-      let benchLogic = []
+      let benchLogicPart = []
       var stringBuilder = ""
       var nest = 0
-      for (var i = 0; i < locationLogic.Can_Bench.length; i++) {
-         var character = locationLogic.Can_Bench.charAt(i)
+      for (var i = 0; i < modLogic.Can_Bench.length; i++) {
+         var character = modLogic.Can_Bench.charAt(i)
          if (character == "|" && nest == 0) {
-            benchLogic.push(stringBuilder)
+            benchLogicPart.push(stringBuilder)
             stringBuilder = ""
             continue
          } else if (character == "(") {
@@ -520,8 +527,8 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       }
 
       // find true checks
-      for (const key in benchLogic) {
-         const logic = benchLogic[key]
+      for (const key in benchLogicPart) {
+         const logic = benchLogicPart[key]
          const logicRoom = findRoom(logic, true, true)
          const logicDirection = findRoom(logic, true, false)
          if (evalLogic(logic, r_truth, logicDirection)) {
@@ -541,7 +548,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             var nameFrom = location
             var nameTo = toId[0]
             if (exactLocation) {
-               if (evalLogic(locationLogic[`${nameFrom}[${fromDoor}]`], r_truths + '|' + exactLocation.replace('[', '\\[').replace(']', '\\]'))) {
+               if (evalLogic(modLogic[`${nameFrom}[${fromDoor}]`], r_truths + '|' + exactLocation.replace('[', '\\[').replace(']', '\\]'))) {
                   transitionData += `${styleRoom(nameFrom)} -- ${fromDoor} --> ${styleRoom(nameTo)}\n${checkRoom(nameFrom)}${checkRoom(nameTo)}`
                   secondLayer.push(toId[0])
                }
@@ -551,7 +558,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             }
       }
       /*for (const location2 of secondLayer) {
-         doors = transitionTable[location2]
+         doors = checkedTransitionTable[location2]
          if (!doors) { continue }
          for (const [fromDoor, toId] of Object.entries(doors)) {
             var nameFrom = location2
@@ -561,11 +568,11 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             }
          }
       }*/
-      for (const [transition, transitionCheck] of Object.entries(avaliableTransitionTable)) {
+      for (const [transition, transitionCheck] of Object.entries(uncheckedTransitionTable)) {
          if (transition == location) {
             for (const door of transitionCheck) {
                if (exactLocation) {
-                  if (evalLogic(locationLogic[`${transition}[${door}]`], r_truths + '|' + exactLocation.replace('[', '\\[').replace(']', '\\]'))) {
+                  if (evalLogic(modLogic[`${transition}[${door}]`], r_truths + '|' + exactLocation.replace('[', '\\[').replace(']', '\\]'))) {
                      transitionData += `${transition} -- ${door} --> UNCHECKED([UNCHECKED]):::unchecked\n`
                   }
                } else {
@@ -576,10 +583,10 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
       }
       secondLayer.push(location)
       for (const room of secondLayer) {
-         if (checkTable[room]) {
+         if (sceneItemTable[room]) {
             transitionData += `${room}:::check\n`
          }
-         if (avaliableTransitionTable[room]) {
+         if (uncheckedTransitionTable[room]) {
             transitionData += `${room}:::transition\n`
          }
       }
@@ -620,7 +627,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
       gateNames.forEach( (roomName) => {
          var scene = roomName.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
-         if ( !visited[roomName] && truthsNames.includes(scene) && evalLogic(locationLogic[roomName], r_truths)) {
+         if ( !visited[roomName] && truthsNames.includes(scene) && evalLogic(modLogic[roomName], r_truths)) {
             truths.push(roomName)
             visited[roomName] = true
             dist[roomName] = 0
@@ -634,8 +641,8 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
          var u = BFSqueue.shift()
          var currRoom = u.match(/[a-zA-Z0-9_]+(?=\[)?/)[0] // Where you can go
          var currDoor = u.match(/(?<=\[)[a-zA-Z0-9_]+(?=\])/)?.[0]
-         if (!transitionTable[currRoom]?.[currDoor]) { continue }
-         const front = transitionTable[currRoom][currDoor] // Where it leads
+         if (!checkedTransitionTable[currRoom]?.[currDoor]) { continue }
+         const front = checkedTransitionTable[currRoom][currDoor] // Where it leads
          const frontName = front[0]
          const frontRoom = front[1]
          const frontTitle = `${frontName}[${frontRoom}]`
@@ -648,7 +655,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
          gateNames.forEach( (roomName) => {
             var roomScene = roomName.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
-            if ( !visited[roomName] && roomScene == frontName && evalLogic(locationLogic[roomName], r_newTruths)) {
+            if ( !visited[roomName] && roomScene == frontName && evalLogic(modLogic[roomName], r_newTruths)) {
                visited[roomName] = true
                link[roomName] = frontTitle
                BFSqueue.push(roomName)
@@ -672,7 +679,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             return outString
          }
 
-         if (avaliableTransitionTable[frontName] && !foundTransition && evalLogic(locationLogic[frontTitle], r_newTruths)) { // Transition path
+         if (uncheckedTransitionTable[frontName] && !foundTransition && evalLogic(modLogic[frontTitle], r_newTruths)) { // Transition path
             foundTransition = true
             let successBFS = buildBFSMap(transitionString)
             if (!successBFS) {
@@ -682,7 +689,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
             }
          }
 
-         if (checkTable[frontName] && !foundCheck) { // Check path
+         if (sceneItemTable[frontName] && !foundCheck) { // Check path
             foundCheck = true
             let successBFS = buildBFSMap(checkString)
             if (!successBFS) {
@@ -730,7 +737,7 @@ async function updateLocation(updateAnyway, onlyReport, forceLast) {
 
 function styleRoom(room) {
    var name = ""
-   var number = checkTable[room] ? ` [${checkTable[room]}]` : ""
+   var number = sceneItemTable[room] ? ` [${sceneItemTable[room]}]` : ""
    if (settings.getSetting('translationType') == 'full') {
       name = special[room] ? `${room}(["${special[room][0].replaceAll(/_/g, " ")}${number}"])` : `${room}(["${room}${number}"])`
    } else if (settings.getSetting('translationType') == 'basic') {
@@ -755,10 +762,10 @@ function styleRoom(room) {
 
 function checkRoom(room) {
    var addStyle = ""
-   if (avaliableTransitionTable[room]) {
+   if (uncheckedTransitionTable[room]) {
       addStyle += `${room}:::transition\n`
    }
-   if (checkTable[room]) {
+   if (sceneItemTable[room]) {
       addStyle += `${room}:::check\n`
    }
    return addStyle

@@ -138,30 +138,31 @@ function loadSpoiler() {
    gateNames     = new Set()
 
    // Find transition data, scenes, rooms, and one ways
-   for (const transition of locationData.LM.Transitions) {
-      if (transition.oneWayType == 'OneWayOut') {
-         oneWayOut.push(`${transition.sceneName}:${transition.gateName}`)
+   for (const transitionBulk of locationData.transitionPlacements) {
+      let transition = transitionBulk.Target.TransitionDef
+      if (transition.Sides == 'OneWayOut') {
+         oneWayOut.push(`${transition.SceneName}:${transition.DoorName}`)
       }
-      if (transition.oneWayType == 'OneWayIn') {
-         oneWayIn.push(`${transition.sceneName}:${transition.gateName}`)
+      if (transition.Sides == 'OneWayIn') {
+         oneWayIn.push(`${transition.SceneName}:${transition.DoorName}`)
       }
-      sceneNames.add(transition.sceneName)
-      gateNames.add(transition.Name)
+      sceneNames.add(transition.SceneName)
+      gateNames.add(transitionBulk.Target.lt.Name)
    }
 
    // Find logic variables 'terms'
-   for (const term of locationData.LM.Terms) {
-      if (!sceneNames.has(term) && !gateNames.has(term)) {
-         terms.push(term)
+   for (const subkey of Object.keys(locationData.LM.Terms)) {
+      for (const term of locationData.LM.Terms[subkey]) {
+         if (!sceneNames.has(term) && !gateNames.has(term)) {
+            terms.push(term)
+         }
       }
    }
    r_terms = new RegExp(terms.join('|'), 'g')
 
    // Find items and their location
    for (const itemSpoiler of locationData.itemPlacements) {
-      var logic = itemSpoiler.location.logic.logic.replaceAll(r_terms, '')
-
-      itemLocations[itemSpoiler.location.logic.name] = logic.match(r_itemLogic)?.[0]
+      itemLocations[itemSpoiler.Location.logic.Name] = itemSpoiler.Location.LocationDef.SceneName
    }
 
    for (const data of locationData.LM.Logic) {
@@ -233,7 +234,7 @@ function loadHelper() {
    sceneItemTable           = {}
 
    try {
-      // HACK ignores out of logic asterist markers
+      // HACK ignores out of logic asterisk markers
       helperLog = fs.readFileSync(helperLogPath, 'utf-8').replaceAll(/\*/g, "")
    } catch (err) { if (err) return }
 
@@ -290,8 +291,10 @@ function loadHelper() {
       }
       inUncheckedItem = inUncheckedItem ? true : (/UNCHECKED REACHABLE LOCATIONS$/).test(lineRaw)
    })
+   console.log("checkedTransitionTable", checkedTransitionTable)
 }
 
+// TODO link this to main node process
 function getSetting(settingName) {
    ipcRenderer.sendSync('getSetting', settingName)
 }
@@ -396,7 +399,7 @@ function styleScene(sceneName) {
          break
    }
 
-   if (findLocationInString(currentLocation, false, true) == sceneName) {
+   if (findLocationInString(currentLocation?.replace(/\[.*/gm, ''), false, true) == sceneName) {
       name = `${name}:::last`
    } else if (targetScene == sceneName) {
       name = `${name}:::target`
@@ -471,16 +474,16 @@ async function updateLocation(manualLocation) {
    var locationChanged = false
 
    if (manualLocation && manualLocation != currentLocation) {
-      lastLocation    = currentLocation
+      lastLocation    = currentLocation?.replace(/\[.*/gm, "")
       currentLocation = manualLocation
       locationChanged = true
    } else {
       await rLineReader.eachLine(modLogPath, (line, last) => {
          let location = line.match(/(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
-
+         
          if (location && location != currentLocation) {
-            lastLocation = currentLocation
-            currentLocation = lastLocation
+            lastLocation = currentLocation?.replace(/\[.*/gm, "")
+            currentLocation = location
             locationChanged = true
             return false
          }
@@ -496,6 +499,7 @@ async function updateLocation(manualLocation) {
             break
          }
       }
+      console.log(`Location changed from ${lastLocation} --> ${currentLocation}`)
    }
 
    return locationChanged
@@ -503,6 +507,7 @@ async function updateLocation(manualLocation) {
 
 // TODO updateTracker
 function updateMainTracker() {
+   console.log("Updating main tracker")
    var connections       = {}
    var mainTrackerString = ""
    var sceneNames        = ""
@@ -595,7 +600,7 @@ window.addEventListener('DOMContentLoaded', () => {
    })
 
    fs.watchFile(modLogPath, { interval: 500 }, async (curr, prev) => {
-      if (updateLocation()) {
+      if (await updateLocation()) {
          updateMainTracker()
          //update local and nearest
       }

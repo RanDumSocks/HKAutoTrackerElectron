@@ -1,3 +1,7 @@
+**NOTE**
+
+This project is in a full rewrite. Things are broken, and have been for quite some time. 1.4.0 will be out with fixes and features, sometime, hopefully.
+
 # HKAT
 This is a feature-full rewrite of [the previous HKAT project](https://github.com/RanDumSocks/HKAutoTracker), but now standalone!
 

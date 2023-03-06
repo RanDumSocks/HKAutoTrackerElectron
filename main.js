@@ -242,6 +242,10 @@ function sendMessage(windowName, id, data) {
    windowInstance?.webContents.postMessage(id, data)
 }
 
+function getSetting(settingName) {
+   return settings.getSetting(settingName)
+}
+
 app.whenReady().then(() => {
    let mainWin = toggleWindow('main')
    sendMessage('main', 'version', version)

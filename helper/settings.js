@@ -65,6 +65,10 @@ module.exports = {
       this.options.lastVersion = value
    },
 
+   getSetting: (settingName) => {
+      // TODO implement me
+   },
+
    loadSettings: () => {
       var userSettings = undefined
       try {

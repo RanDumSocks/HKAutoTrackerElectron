@@ -1,8 +1,9 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron')
 const { autoUpdater } = require('electron-updater')
-const settings = require('./helper/settings')
-const path = require('path')
-const url = require('url')
+const settings        = require('./helper/settings')
+const path            = require('path')
+const url             = require('url')
+const open            = require('open')
 
 const version = app.getVersion()
 
@@ -221,6 +222,12 @@ var menuTemplate = [
                open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose')
             },
          },
+         {
+            label: 'Changelog',
+            click: () => {
+               open(`https://github.com/RanDumSocks/HKAutoTrackerElectron/releases/tag/v${version}`)
+            }
+         }
       ],
    },
 ]

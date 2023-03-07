@@ -2,7 +2,7 @@ const path            = require('path')
 const fs              = require('fs')
 const rLineReader     = require('reverse-line-reader')
 const { ipcRenderer } = require('electron')
-const common          = require('./../helper/commonjs.js')
+const common          = require('./../helper/commonjs.js') 
 
 // File Paths
 const rootPath                 = path.resolve(process.env.APPDATA, '../LocalLow/Team Cherry/Hollow Knight')

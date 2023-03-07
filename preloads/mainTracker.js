@@ -388,16 +388,18 @@ async function updateLocation(manualLocation) {
       })
    }
 
-   if (locationChanged) {
-      for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
-         let toScene = toLocation[0]
-   
-         if (toScene == lastLocation) {
-            currentLocation = `${currentLocation}[${door}]`
-            break
+   if (checkedTransitionTable[currentLocation]) {
+      if (locationChanged) {
+         for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
+            let toScene = toLocation[0]
+      
+            if (toScene == lastLocation) {
+               currentLocation = `${currentLocation}[${door}]`
+               break
+            }
          }
+         console.log(`Location changed from ${lastLocation} --> ${currentLocation}`)
       }
-      console.log(`Location changed from ${lastLocation} --> ${currentLocation}`)
    }
 
    return locationChanged

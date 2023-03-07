@@ -163,7 +163,7 @@ var menuTemplate = [
                },
             ],
          },
-         {
+         /*{
             label: 'sep',
             type: 'separator',
          },
@@ -175,7 +175,7 @@ var menuTemplate = [
                settings.benchPathfinding = !settings.benchPathfinding
             },
             checked: settings.benchPathfinding,
-         },
+         },*/
       ],
    },
    {
@@ -219,10 +219,6 @@ var menuTemplate = [
             click: () => {
                open('https://github.com/RanDumSocks/HKAutoTrackerElectron/issues/new/choose')
             },
-         },
-         {
-            label: 'Changelog',
-            //click: changelog.showLatest, // TODO
          },
       ],
    },

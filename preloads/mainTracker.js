@@ -85,6 +85,7 @@ classDef transition stroke-width:4px, stroke:#d68b00;
 classDef check color:#3ab020;
 classDef last fill:#022e00;
 classDef unchecked fill:#9e3c03;
+classDef uncheckeditem fill:#3ab020, color:#ffffff;
 classDef target fill:#06288f;
 `
 /* TODO figure out if this is needed for pathing
@@ -180,6 +181,7 @@ function loadVariables() {
    } catch (err) {
       console.warn("Could not load tracker data")
    }
+   updateBenches()
 }
 
 function loadHelper() {
@@ -349,6 +351,8 @@ function styleScene(sceneName) {
       name = `${name}:::last`
    } else if (targetScene == sceneName) {
       name = `${name}:::target`
+   } else if (activeBenches.includes(sceneName)) {
+      name = `${name}:::benchactive`
    } else {
       name = type ? `${name}:::${type}` : name
    }
@@ -362,6 +366,13 @@ function styleScene(sceneName) {
 
    let retVal = [name == '' ? undefined : name, classStyle == '' ? undefined : classStyle]
    return retVal
+}
+
+function updateBenches() {
+   for (const benchID of Object.keys(saveVariables).filter( (e) => e.match(/^Bench\-/))) {
+      activeBenches.push(findLocationInString(modLogic[benchID]).scene)
+   }
+   console.log(activeBenches)
 }
 
 /**
@@ -378,34 +389,33 @@ async function updateLocation(manualLocation) {
    } else {
       await rLineReader.eachLine(modLogPath, (line, last) => {
          let location = line.match(/(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
-         
-         if (location && location != currentLocation) {
-            lastLocation = currentLocation?.replace(/\[.*/gm, "")
-            currentLocation = location
-            locationChanged = true
+
+         if (location) {
+            if (location != findLocationInString(currentLocation).scene) {
+               lastLocation = currentLocation?.replace(/\[.*/gm, "")
+               currentLocation = location
+               locationChanged = true
+            }
             return false
          }
       })
    }
 
-   if (checkedTransitionTable[currentLocation]) {
-      if (locationChanged) {
-         for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
-            let toScene = toLocation[0]
-      
-            if (toScene == lastLocation) {
-               currentLocation = `${currentLocation}[${door}]`
-               break
-            }
+   if (checkedTransitionTable[currentLocation] && locationChanged) {
+      for (const [door, toLocation] of Object.entries(checkedTransitionTable[currentLocation])) {
+         let toScene = toLocation[0]
+   
+         if (toScene == lastLocation) {
+            currentLocation = `${currentLocation}[${door}]`
+            break
          }
-         console.log(`Location changed from ${lastLocation} --> ${currentLocation}`)
       }
+      console.log(`Location changed from ${lastLocation} --> ${currentLocation}`)
    }
 
    return locationChanged
 }
 
-// TODO updateTracker
 function updateMainTracker() {
    var connections       = {}
    var mainTrackerString = ""
@@ -454,6 +464,7 @@ async function updateLocalTracker() {
    var frontier = [currentLocationData.found]
    var createdConnections = []
    var addedNodes = new Set()
+   addedNodes.add(currentLocationData.scene)
    
    var sceneNames = ''
    var sceneTypes = ''
@@ -479,9 +490,21 @@ async function updateLocalTracker() {
       frontier = newFrontier
    }
 
+   // unchecked locations
    if (uncheckedTransitionTable[currentLocationData.scene]) {
       for (const uncheckedGate of uncheckedTransitionTable[currentLocationData.scene]) {
-         mainString += `${currentLocationData.scene} -- ${uncheckedGate} --> unchecked([unchecked]):::unchecked\n`
+         if (!currentLocationData.gate || evalLogic(`${currentLocationData.scene}[${uncheckedGate}]`, [currentLocationData.found])) {
+            mainString += `${currentLocationData.scene} -- ${uncheckedGate} --> unchecked([unchecked]):::unchecked\n`
+         }
+      }
+   }
+
+   // unchecked items
+   if (sceneItemTable[currentLocationData.scene]) {
+      for (const item of sceneItemTable[currentLocationData.scene]) {
+         if (!currentLocationData.gate || evalLogic(item, [currentLocationData.found])) {
+            mainString += `${currentLocationData.scene} --> ${item}(${item}):::uncheckeditem\n`
+         }
       }
    }
 

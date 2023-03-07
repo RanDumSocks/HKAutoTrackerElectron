@@ -1,5 +1,9 @@
+**NOTE**
+
+This project is in a full rewrite. Things are broken, and have been for quite some time. 1.4.0 will be out with fixes and features, sometime, hopefully.
+
 # HKAT
-This is a feature-full rewrite of [the previous HKAT project](https://github.com/RanDumSocks/HKAutoTracker), but now standalone!
+This is a feature-full rewrite a rewrite of [the previous HKAT project](https://github.com/RanDumSocks/HKAutoTracker), but now standalone!
 
 This is a auto-tracker for the [Randomiser 4](https://github.com/homothetyhk/RandomizerMod) mod for Hollow Knight.
 
@@ -30,16 +34,17 @@ Upon running the program, the software will automatically download and install l
 - Shows which rooms have reachable unchecked transitions and item checks
 - Local map view (must have [HKMP](https://github.com/Extremelyd1/HKMP) installed)
 	- Shows your current room, and immediate reachable transitions, displaying what door leads to what adjacent room
-- Nearest Locations Tracker (must have [HKMP](https://github.com/Extremelyd1/HKMP) installed)
-	- Searches for the nearest unchecked transition and item check and displays the shortest path to get there from current position. Utilizes logic parsing to determine only possible paths according to randomiser logic.
+- ~~Nearest Locations Tracker (must have [HKMP](https://github.com/Extremelyd1/HKMP) installed)~~
+	- ~~Searches for the nearest unchecked transition and item check and displays the shortest path to get there from current position. Utilizes logic parsing to determine only possible paths according to randomiser logic.~~
+   - **WILL BE ADDED SOON**
 
 ## Usage
-There are 3 windows in this program, the first window to load is the main window (HKAT), and that is the window where all the tracking computation is. Closing this window will close any other opened windows.
+There are ~~3~~ 2 windows in this program, the first window to load is the main window (HKAT), and that is the window where all the tracking computation is. Closing this window will close any other opened windows.
 
 - Local Tracker
-	- Shows the current room you are in, and immediate screen transitions discovered
-- Nearest Tracker
-	- Find the nearest unchecked screen transition, item check, and bench showing the exact shortest path to get there
+	- Shows the current room you are in, and immediate screen transitions discovered.
+- ~~Nearest Tracker~~
+	- ~~Find the nearest unchecked screen transition, item check, and bench showing the exact shortest path to get there.~~
 
 ### Colours
 The map is colour coded, these are what the colours mean:
@@ -47,10 +52,11 @@ The map is colour coded, these are what the colours mean:
 	- current location
 - Light-blue background
 	- Room with a bench
+   - Even lighter colour means bench has been visited and you can warp there.
 - Magenta background
 	- Stag stations without a bench
 - Orange background
-        - Shop location 
+	- Shop location 
 - Green text
 	- unchecked reachable item check with number of checks in brackets
 - Orange boarder

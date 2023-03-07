@@ -1,6 +1,6 @@
 @font-face {
    font-family: Ubuntu;
-   src: url("Ubuntu-Bold.ttf");
+   src: url("./../resources/Ubuntu-Bold.ttf");
 }
 body {
    overflow: hidden;

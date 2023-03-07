@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html id="main">
+   <head>
+      <meta charset="UTF-8" />
+      <script src="./../lib/mermaid.min.js"></script>
+      <script src="./../helper/movement.js"></script>
+      <link rel="stylesheet" href="./../helper/graph.css" />
+      <script>
+         mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            flowchart: {
+               curve: 'basis',
+               nodeSpacing: 25,
+               rankSpacing: 75,
+            },
+            securityLevel:'loose',
+         })
+
+         const updateGraph = (data) => {
+            var prevScroll = { x: window.scrollX, y: window.scrollY }
+            var graphDef   = data ?? document.getElementById('mermaidGraph').innerText
+            var output     = document.getElementById('mermaidOut')
+
+            try {
+               var graph = mermaid.mermaidAPI.render('mermaidOutSVG', graphDef, (svgCode, bindFunction) => {
+                  output.innerHTML = svgCode
+                  var svg = document.getElementById('mermaidOutSVG')
+
+                  svg.style.width = getComputedStyle(svg).maxWidth
+                  // addClick() // TODO implement this
+                  window.scrollTo(prevScroll.x, prevScroll.y)
+               })
+            } catch (err) {
+               console.log(err)
+            }
+         }
+
+         window.addEventListener('DOMContentLoaded', () => {
+            updateGraph()
+            new MutationObserver((mutationsList, observer) => {
+               updateGraph()
+            }).observe(document.getElementById('mermaidGraph'), { attributes: true, childList: true, subtree: true })
+         })
+      </script>
+   </head>
+   <body>
+      <div class="mermaidGraph" id="mermaidGraph"></div>
+      <div id="mermaidOut"></div>
+   </body>
+</html>

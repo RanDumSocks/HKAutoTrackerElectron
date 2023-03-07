@@ -287,6 +287,10 @@ app.whenReady().then(() => {
    sendMessage('main', 'version', version)
    sendMessage('main', 'setting-change', settings.options)
 
+   if (!process.defaultApp) {
+      autoUpdater.checkForUpdates()
+   }
+
    if (process.defaultApp) {
       menuTemplate.push({
          label: 'Dev Tools',

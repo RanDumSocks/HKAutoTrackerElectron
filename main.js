@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const settings = require('./helper/settings')
 const path = require('path')
 const url = require('url')
@@ -249,6 +250,36 @@ function toggleWindow(windowName, url) {
 function sendMessage(windowName, id, data) {
    let windowInstance = windows[windowName].instance
    windowInstance?.webContents.postMessage(id, data)
+}
+
+{ // auto updater
+
+   autoUpdater.on('error', (err) => {
+      console.error(err)
+   })
+
+   autoUpdater.on('update-downloaded', (info) => {
+      sendWin('update-downloaded', info)
+      var option = dialog.showMessageBoxSync(winMain, {
+         message: `${info.releaseName}\n\nNew update downloaded, would you like to restart and update now?`,
+         type: 'question',
+         buttons: ['Yes', 'No'],
+         title: `Update available!`,
+         noLink: true
+      })
+      if (option == 0) {
+         autoUpdater.quitAndInstall()
+      }
+      menuTemplate.push({
+         label: "Update!",
+         click: () => { autoUpdater.quitAndInstall() }
+      })
+      Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+   })
+
+   autoUpdater.on('update-available', () => {
+      sendWin('Update found, downloading in background...')
+   })
 }
 
 app.whenReady().then(() => {

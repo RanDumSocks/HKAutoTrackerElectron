@@ -66,7 +66,7 @@ module.exports = {
    },
 
    getSetting: (settingName) => {
-      // TODO implement me
+      return this.options[settingName]
    },
 
    loadSettings: () => {

@@ -2,11 +2,12 @@ const path            = require('path')
 const fs              = require('fs')
 const rLineReader     = require('reverse-line-reader')
 const { ipcRenderer } = require('electron')
+const common          = require('./../helper/commonjs.js')
 
 // File Paths
 const rootPath                 = path.resolve(process.env.APPDATA, '../LocalLow/Team Cherry/Hollow Knight')
-const helperLogPath            = path.resolve(rootPath, 'Randomizer 4/Recent/HelperLog.txt')
-const trackerDataPath          = path.resolve(rootPath, 'Randomizer 4/Recent/TrackerDataPM.txt')
+const trackerDataPath          = path.resolve(rootPath, 'Randomizer 4/Recent/TrackerData.json')
+const trackerDataPMPath        = path.resolve(rootPath, 'Randomizer 4/Recent/TrackerDataPM.txt')
 const modSettingsPath          = path.resolve(rootPath, 'Randomizer 4/Recent/settings.txt')
 const modLogPath               = path.resolve(rootPath, 'ModLog.txt')
 const spoilerLogPath           = path.resolve(rootPath, 'Randomizer 4/Recent/RawSpoiler.json')
@@ -109,9 +110,6 @@ const defaultTransitionTable = {
    var lastLocation             = undefined
    var targetScene              = undefined  // Manually set target scene
    var activeBenches            = []         // ['scene']
-   var benchLogic               = []         // Regex of transitions one can reach from a bench
-
-   var saveData = undefined  // Object of user's modded save data
 
    var settings = {} // Settings updated by main process
 
@@ -134,7 +132,8 @@ function loadSpoiler() {
    oneWayOut     = []
    oneWayIn      = []
    modLogic      = {}
-   sceneNames    = new Set(['Upper_Tram', 'Lower_Tram'])
+   //sceneNames    = new Set(['Upper_Tram', 'Lower_Tram'])
+   sceneNames    = new Set()
    gateNames     = new Set()
 
    // Find transition data, scenes, rooms, and one ways
@@ -165,56 +164,16 @@ function loadSpoiler() {
       itemLocations[itemSpoiler.Location.logic.Name] = itemSpoiler.Location.LocationDef.SceneName
    }
 
+   // Save all logic rules
    for (const data of locationData.LM.Logic) {
       modLogic[data.name] = data.logic
    }
 }
 
-// Keeps save data updated with internal file watches
-// Called when user switches between saves
-function loadSave() {
-   try {
-      var seed  = fs.readFileSync(modSettingsPath, 'utf-8').match(/(?<="Seed": )[0-9]*/)[0]
-      var files = fs.readdirSync(rootPath)
-
-      files.every( (fileName) => {
-         if ((/^user[0-9]+\.modded\.json$/).test(fileName)) {
-            let previousSaveFilePath = saveFilePath
-            let filePath             = path.resolve(rootPath, fileName)
-            let testFile             = JSON.parse(fs.readFileSync(filePath))  // TODO dont parse, just use a regex test
-            
-            // Find save file with matching seed
-            if (testFile?.modData?.["Randomizer 4"]?.GenerationSettings?.Seed == seed) {
-               if (previousSaveFilePath) { fs.unwatchFile(previousSaveFilePath) }
-               saveData = testFile
-
-               updateSaveData()
-
-               fs.watchFile(saveFilePath, { interval: 1000 }, async (curr, prev) => {
-                  saveData = JSON.parse(fs.readFileSync(saveFilePath))
-
-                  updateSaveData()
-               })
-
-               return false
-            }
-         }
-
-         return true
-      })
-   } catch (err) {
-      if (err) {
-         console.warn('Save file could not be found')
-         console.warn(err)
-         return false
-      }
-   }
-}
-
-// Called when trackerDataPath file changes
+// Called when trackerDataPMPath file changes
 function loadVariables() {
    try {
-      saveVariables = JSON.parse(fs.readFileSync(trackerDataPath, 'utf-8').replace(/\,(?!\s*?[\{\[\"\'\w])/g, ''))
+      saveVariables = JSON.parse(fs.readFileSync(trackerDataPMPath, 'utf-8').replace(/\,(?!\s*?[\{\[\"\'\w])/g, ''))
 
       saveVariables['FALSE'] = 0
       saveVariables['TRUE']  = 1
@@ -224,79 +183,42 @@ function loadVariables() {
 }
 
 function loadHelper() {
-   var helperLog             = undefined
-   var inCheckedTransition   = false
-   var inUncheckedTransition = false
-   var inUncheckedItem       = false
+   var trackerData           = undefined
 
    checkedTransitionTable   = {}
    uncheckedTransitionTable = {}
    sceneItemTable           = {}
 
-   try {
-      // HACK ignores out of logic asterisk markers
-      helperLog = fs.readFileSync(helperLogPath, 'utf-8').replaceAll(/\*/g, "")
-   } catch (err) { if (err) return }
+   trackerData = JSON.parse(fs.readFileSync(trackerDataPath))
 
-   helperLog.split(/\r?\n/).forEach( (lineRaw) => {
-      let line = lineRaw.replaceAll(/\r?\n? /g, "") // TODO check if adding replace parameter breaks
+   for (const [from, to] of Object.entries(trackerData.visitedTransitions)) {
+      let fromScene = from.match(/^[a-zA-Z0-9_]*/)[0]
+      let fromDoor = from.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/)[0]
+      let toScene = to.match(/^[a-zA-Z0-9_]*/)[0]
+      let toDoor = to.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/)[0]
 
-      if (inCheckedTransition) {
-         if (line == "") {
-            inCheckedTransition = false
-         } else {
-            let trimmedLine     = line
-            let transitionFrom  = trimmedLine.match(/^[a-zA-Z0-9_]*/)[0]
-            let transitionTo    = trimmedLine.match(/(?<=-->)[a-zA-Z0-9_]*/)[0]
-            let doorTransitions = trimmedLine.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/g)
-            let doorFrom        = doorTransitions[0]
-            let doorTo          = doorTransitions[1]
-            if (transitionTo && transitionFrom && !oneWayOut.includes(`${transitionFrom}:${doorFrom}`)) {
-               if (!checkedTransitionTable[transitionFrom]) { checkedTransitionTable[transitionFrom] = {} }
-               checkedTransitionTable[transitionFrom][doorFrom] = [transitionTo, doorTo]
-            }
-         }
+      if (!checkedTransitionTable[fromScene]) { checkedTransitionTable[fromScene] = {} }
+      checkedTransitionTable[fromScene][fromDoor] = [toScene, toDoor]
+   }
+
+   for (const transition of trackerData.uncheckedReachableTransitions) {
+      let scene = transition.match(/^[a-zA-Z0-9_]*/)[0]
+      let door = transition.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/)[0]
+
+      if (uncheckedTransitionTable[scene]) {
+         uncheckedTransitionTable[scene].push(door)
+      } else {
+         uncheckedTransitionTable[scene] = [door]
       }
-      inCheckedTransition = inCheckedTransition ? true : (/CHECKED TRANSITIONS$/).test(lineRaw)
+   }
 
-      if (inUncheckedTransition) {
-         if (line == "") {
-            inUncheckedTransition = false
-         } else {
-            let scene = line.match(/[a-zA-Z0-9_]*(?=\[)/)[0]
-            let gate  = line.match(/(?<=\[)[a-zA-Z0-9_]*(?=\])/)[0]
-
-            if (uncheckedTransitionTable[scene]) {
-               uncheckedTransitionTable[scene].push(gate)
-            } else {
-               uncheckedTransitionTable[scene] = [gate]
-            }
-         }
+   for (const item of trackerData.uncheckedReachableLocations) {
+      if (sceneItemTable[itemLocations[item]]) {
+         sceneItemTable[itemLocations[item]].push(item)
+      } else {
+         sceneItemTable[itemLocations[item]] = [item]
       }
-      inUncheckedTransition = inUncheckedTransition ? true : (/UNCHECKED REACHABLE TRANSITIONS$/).test(lineRaw)
-
-      if (inUncheckedItem) {
-         if (line == "") {
-            inUncheckedItem = false
-         } else {
-            let item = line
-            if (itemLocations[item]) {
-               if (sceneItemTable[itemLocations[item]]) {
-                  sceneItemTable[itemLocations[item]].push(item)
-               } else {
-                  sceneItemTable[itemLocations[item]] = [item]
-               }
-            }
-         }
-      }
-      inUncheckedItem = inUncheckedItem ? true : (/UNCHECKED REACHABLE LOCATIONS$/).test(lineRaw)
-   })
-   console.log("checkedTransitionTable", checkedTransitionTable)
-}
-
-// TODO link this to main node process
-function getSetting(settingName) {
-   ipcRenderer.sendSync('getSetting', settingName)
+   }
 }
 
 // NOTE modLogic now passed, not logic string
@@ -364,6 +286,12 @@ function findLocationInString(str, lookGates, lookScenes) {
          if ((gateNames.has(variable) && lookGates) || (sceneNames.has(variable) && lookScenes)) {
             return variable
          }
+         if (gateNames.has(variable) && lookGates) {
+            return variable
+         }
+         if (sceneNames.has(variable.replace(/\[.*/gm, '')) && lookScenes) {
+            return variable.replace(/\[.*/gm, '')
+         }
       }
    }
    return undefined
@@ -399,12 +327,10 @@ function styleScene(sceneName) {
          break
    }
 
-   if (findLocationInString(currentLocation?.replace(/\[.*/gm, ''), false, true) == sceneName) {
+   if (findLocationInString(currentLocation, false, true) == sceneName) {
       name = `${name}:::last`
    } else if (targetScene == sceneName) {
       name = `${name}:::target`
-   } else if (saveData?.modData?.Benchwarp?.visitedBenchScenes?.[sceneName]) {
-      name = `${name}:::benchactive`
    } else {
       name = type ? `${name}:::${type}` : name
    }
@@ -416,54 +342,8 @@ function styleScene(sceneName) {
       classStyle += `${sceneName}:::check\n`
    }
 
-   return [name == '' ? undefined : name, classStyle == '' ? undefined : classStyle]
-}
-
-function updateSaveData() {
-
-   activeBenches = []
-
-   saveData.modData.Benchwarp.visitedBenchScenes['Upper_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram_RG']
-   saveData.modData.Benchwarp.visitedBenchScenes['Lower_Tram'] = saveData.modData.Benchwarp.visitedBenchScenes['Room_Tram']
-
-   for (const [benchName, value] of Object.entries(saveData.modData.Benchwarp.visitedBenchScenes)) {
-      if (value) {
-         activeBenches.push(benchName)
-      }
-   }
-
-   // TODO build bench logic
-   { // Bench Logic
-      let r_truth        = new RegExp(activeBenches.join('(\\[[a-zA-Z0-9_]*\\])*|') + '(\\[[a-zA-Z0-9_]*\\])*', 'g')
-      let benchLogicPart = []
-      let stringBuilder  = ""
-      let nest           = 0
-
-      for (var i = 0; i < modLogic.Can_Bench.length; i++) {
-         var character = modLogic.Can_Bench.charAt(i)
-         if (character == "|" && nest == 0) {
-            benchLogicPart.push(stringBuilder)
-            stringBuilder = ""
-            continue
-         } else if (character == "(") {
-            nest++
-         } else if (character == ")") {
-            nest--
-         }
-         stringBuilder += character
-      }
-
-      for (const key in benchLogicPart) {
-         let logic         = benchLogicPart[key]
-         let logicLocation = findLocationInString(logic, true, true)
-         let logicGate     = findLocationInString(logic, true, false)
-
-         if ((!logicGate || evalLogic(logicGate, r_truth)) && evalLogic(logicLocation, r_truth)) {
-            benchLogic.push(logicLocation)
-         }
-      }
-      
-   }
+   let retVal = [name == '' ? undefined : name, classStyle == '' ? undefined : classStyle]
+   return retVal
 }
 
 /**
@@ -507,7 +387,6 @@ async function updateLocation(manualLocation) {
 
 // TODO updateTracker
 function updateMainTracker() {
-   console.log("Updating main tracker")
    var connections       = {}
    var mainTrackerString = ""
    var sceneNames        = ""
@@ -540,6 +419,7 @@ function updateMainTracker() {
          if (!addedStyles.includes(sceneTo)) {
             sceneNames += `${sceneStyleTo[0]}\n`
             sceneTypes += sceneStyleTo[1] ?? ''
+            addedStyles.push(sceneTo)
          }
       }
    }
@@ -547,19 +427,24 @@ function updateMainTracker() {
    document.getElementById('mermaidGraph').innerHTML = `flowchart ${settings.mapOrientation ?? 'LR'}\n${mermaidClassDefs}\n\n${mainTrackerString}\n${sceneNames}\n${sceneTypes}`
 }
 
-function updateLocalTracker() {
+async function updateLocalTracker() {
+   if (!(await ipcRenderer.invoke('is-window-open', 'local'))) { return }
+   var data = ''
    var currentScene = findLocationInString(currentLocation, false, true)
    var currentGate  = findLocationInString(currentLocation, true, false)
+   //console.log(currentScene, currentGate)
 
+   ipcRenderer.send('update-local-tracker', data)
 }
 
-function reloadTracker() {
+async function reloadTracker() {
    loadSpoiler()
    loadVariables()
-   loadSave()
    loadHelper()
+   await updateLocation()
    updateMainTracker()
-   // update local and nearest
+   updateLocalTracker()
+   return true
 }
 
 { // Message handling
@@ -571,7 +456,7 @@ function reloadTracker() {
       
    ipcRenderer.on('setting-change', (e, settingsData) => {
       settings = settingsData
-      if (document.readyState === 'interactive') {
+      if (document.readyState === 'complete') {
          updateMainTracker()
       }
    })
@@ -579,18 +464,22 @@ function reloadTracker() {
    ipcRenderer.on('set-target', async (e, sceneName) => {
       targetScene = sceneName
    })
+
+   ipcRenderer.on('update-local', async (e) => {
+      updateLocalTracker()
+   })
 }
 
 window.addEventListener('DOMContentLoaded', () => {
    reloadTracker()
 
-   fs.watchFile(helperLogPath, { interval: 500 }, async (curr, prev) => {
+   fs.watchFile(trackerDataPath, { interval: 500 }, async (curr, prev) => {
       loadHelper()
       updateMainTracker()
       // update local and nearest
    })
 
-   fs.watchFile(trackerDataPath, { interval: 500 }, async (curr, prev) => {
+   fs.watchFile(trackerDataPMPath, { interval: 500 }, async (curr, prev) => {
       loadVariables()
       //update local and nearest
    })
@@ -603,6 +492,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if (await updateLocation()) {
          updateMainTracker()
          //update local and nearest
+         updateLocalTracker()
       }
    })
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain } = require('electron')
 const settings = require('./helper/settings')
 const path = require('path')
 const url = require('url')
@@ -12,9 +12,9 @@ var cleanedUp = false
 
 // BrowserWindow objects
 var windows = {
-   main: [
-      undefined,
-      {
+   main: {
+      instance: undefined,
+      options: {
          url: url.format({
             pathname: path.resolve(__dirname, 'pages/mainTracker.html'),
             protocol: 'file',
@@ -27,27 +27,35 @@ var windows = {
             contextIsolation: false
          },
       },
-   ],
-   local: [
-      undefined,
-      {
+   },
+   local: {
+      instance: undefined,
+      menuID: 'localTracker',
+      options: {
          url: url.format({
             pathname: path.resolve(__dirname, 'pages/localTracker.html'),
             protocol: 'file',
             slashes: true,
-         }), // TODO: add web preferences
+         }),
+         webPreferences: {
+            preload: path.resolve(__dirname, 'preloads/localTracker.js')
+         },
       },
-   ],
-   nearest: [
-      undefined,
-      {
+   },
+   nearest: {
+      instance: undefined,
+      menuID: 'nearestTracker',
+      options: {
          url: url.format({
             pathname: path.resolve(__dirname, 'pages/nearestTracker.html'),
             protocol: 'file',
             slashes: true,
-         }), // TODO: add web preferences
+         }),
+         webPreferences: {
+            preload: path.resolve(__dirname, 'preloads/nearestTracker.js')
+         },
       },
-   ],
+   },
 }
 
 var menuTemplate = [
@@ -124,16 +132,6 @@ var menuTemplate = [
                   checked: settings.translationType == 'full',
                },
                {
-                  label: 'Basic',
-                  type: 'radio',
-                  id: 'basic',
-                  click: () => {
-                     settings.translationType = 'basic'
-                     sendMessage('main', 'setting-change', settings.options)
-                  },
-                  checked: settings.translationType == 'basic',
-               },
-               {
                   label: 'Landmarks',
                   type: 'radio',
                   id: 'landmark',
@@ -142,6 +140,16 @@ var menuTemplate = [
                      sendMessage('main', 'setting-change', settings.options)
                   },
                   checked: settings.translationType == 'landmark',
+               },
+               {
+                  label: 'Basic',
+                  type: 'radio',
+                  id: 'basic',
+                  click: () => {
+                     settings.translationType = 'basic'
+                     sendMessage('main', 'setting-change', settings.options)
+                  },
+                  checked: settings.translationType == 'basic',
                },
                {
                   label: 'None',
@@ -179,28 +187,27 @@ var menuTemplate = [
             id: 'localTracker',
             click: () => {
                toggleWindow('local')
+               sendMessage('main', 'update-local')
             },
          },
-         {
+         /*{
             label: 'Nearest Tracker',
             type: 'checkbox',
             id: 'nearestTracker',
             click: () => {
                toggleWindow('nearest')
+               sendMessage('main', 'update-nearest')
             },
-         },
+         },*/
          {
             label: 'sep',
             type: 'separator',
          },
          {
             label: 'Find Current Location',
-            /*click: () => { // TODO
-               winMain.webContents.postMessage('main-message', [
-                  'find-location',
-                  {},
-               ])
-            },*/
+            click: (_menuItem, window) => {
+               window.webContents.postMessage('find-location', "")
+            },
          },
       ],
    },
@@ -222,28 +229,30 @@ var menuTemplate = [
 ]
 
 function toggleWindow(windowName, url) {
-   let windowInstance = windows[windowName][0]
-   let windowOptions = windows[windowName][1]
+   let windowInstance = windows[windowName].instance
+   let windowOptions = windows[windowName].options
 
    if (!windowInstance) {
       windowInstance = new BrowserWindow(windowOptions)
       windowInstance.loadURL(windowOptions.url)
-      windows[windowName][0] = windowInstance
+      windows[windowName].instance = windowInstance
    } else {
       windowInstance.close()
-      windows[windowName][0] = undefined
+      windows[windowName].instance = undefined
    }
+
+   windowInstance.on('closed', () => {
+      windows[windowName].instance = undefined
+      let menuItem = Menu.getApplicationMenu().getMenuItemById(windows[windowName].menuID)
+      if (menuItem) { menuItem.checked = false }
+   })
 
    return windowInstance
 }
 
 function sendMessage(windowName, id, data) {
-   let windowInstance = windows[windowName][0]
+   let windowInstance = windows[windowName].instance
    windowInstance?.webContents.postMessage(id, data)
-}
-
-function getSetting(settingName) {
-   return settings.getSetting(settingName)
 }
 
 app.whenReady().then(() => {
@@ -259,6 +268,11 @@ app.whenReady().then(() => {
    }
 
    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+
+   ipcMain.on('update-local-tracker', (e, data) => {sendMessage('local', 'updateGraph', data)})
+   ipcMain.on('update-nearest-tracker', (e, data) => {sendMessage('nearest', 'updateGraph', data)})
+   ipcMain.on('msg', (e, msg) => { console.log(msg) })
+   ipcMain.handle('is-window-open', (e, windowName) => { return windows[windowName] != undefined })
 
    mainWin.on('closed', () => {
       app.quit()

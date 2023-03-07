@@ -29,3 +29,6 @@ h2 {
 .edgeLabel {
    background-color: #202020 !important;
 }
+#dmermaidOutSVG {
+   visibility: hidden;
+}

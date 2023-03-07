@@ -286,6 +286,7 @@ app.whenReady().then(() => {
    let mainWin = toggleWindow('main')
    sendMessage('main', 'version', version)
    sendMessage('main', 'setting-change', settings.options)
+   toggleWindow('local')
 
    if (process.defaultApp) {
       menuTemplate.push({
@@ -299,7 +300,7 @@ app.whenReady().then(() => {
    ipcMain.on('update-local-tracker', (e, data) => {sendMessage('local', 'updateGraph', data)})
    ipcMain.on('update-nearest-tracker', (e, data) => {sendMessage('nearest', 'updateGraph', data)})
    ipcMain.on('msg', (e, msg) => { console.log(msg) })
-   ipcMain.handle('is-window-open', (e, windowName) => { return windows[windowName] != undefined })
+   ipcMain.handle('is-window-open', (e, windowName) => { return windows[windowName].instance != undefined })
 
    mainWin.on('closed', () => {
       app.quit()

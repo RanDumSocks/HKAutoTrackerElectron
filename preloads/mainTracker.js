@@ -232,7 +232,7 @@ function loadHelper() {
  */
 function evalLogic(modLogicName, knownVars) {
    var parsedString = modLogic[modLogicName]
-   var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'))
+   var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'), "g")
 
    parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
    parsedString = parsedString.replaceAll("+", "&&")
@@ -278,23 +278,41 @@ function evalLogic(modLogicName, knownVars) {
  * @param {boolean} lookScenes whether to look for a scene in the string
  * @returns {string} found gate/scene
  */
-function findLocationInString(str, lookGates, lookScenes) {
+function findLocationInString(str) {
    if (!str) { return false }
    var variables = str.match(/[a-zA-Z0-9_\[\]]+/g)
    if (variables) {
       for (const variable of variables) {
-         if ((gateNames.has(variable) && lookGates) || (sceneNames.has(variable) && lookScenes)) {
-            return variable
-         }
-         if (gateNames.has(variable) && lookGates) {
-            return variable
-         }
-         if (sceneNames.has(variable.replace(/\[.*/gm, '')) && lookScenes) {
-            return variable.replace(/\[.*/gm, '')
+         if (gateNames.has(variable) || sceneNames.has(variable)) {
+            return  {
+               found: variable,
+               scene: variable?.replace(/\[.*/gm, ''),
+               gate: variable?.match(/(?<=\[)[a-zA-Z0-9_].*(?=\])/gm)?.[0]
+            }
          }
       }
    }
-   return undefined
+   return {}
+}
+
+// returns: { fromGate: [toScene, toGate, toFullName] }
+function getAdjacentScenes(sceneName) {
+   var location = findLocationInString(sceneName)
+   var adjacent = {}
+   
+   if (location.gate) {
+      for (const [fromGate, [toScene, toGate]] of Object.entries(checkedTransitionTable[location.scene])) {
+         if (evalLogic(`${location.scene}[${fromGate}]`, [location.found])) {
+            adjacent[fromGate] = [toScene, toGate, `${toScene}[${toGate}]`]
+         }
+      }
+   } else if (location.scene) {
+      for (const [fromGate, [toScene, toGate]] of Object.entries(checkedTransitionTable[location.scene])) {
+         adjacent[fromGate] = [toScene, toGate, `${toScene}[${toGate}]`]
+      }
+   }
+
+   return adjacent
 }
 
 // TODO styleRoom
@@ -327,7 +345,7 @@ function styleScene(sceneName) {
          break
    }
 
-   if (findLocationInString(currentLocation, false, true) == sceneName) {
+   if (findLocationInString(currentLocation).scene == sceneName) {
       name = `${name}:::last`
    } else if (targetScene == sceneName) {
       name = `${name}:::target`
@@ -430,10 +448,48 @@ function updateMainTracker() {
 async function updateLocalTracker() {
    if (!(await ipcRenderer.invoke('is-window-open', 'local'))) { return }
    var data = ''
-   var currentScene = findLocationInString(currentLocation, false, true)
-   var currentGate  = findLocationInString(currentLocation, true, false)
-   //console.log(currentScene, currentGate)
+   var currentLocationData = findLocationInString(currentLocation)
+   var frontier = [currentLocationData.found]
+   var createdConnections = []
+   var addedNodes = new Set()
+   
+   var sceneNames = ''
+   var sceneTypes = ''
+   var mainString = ''
 
+   // Main structure
+   for (let i = 2; i > 0; i--) {
+      var newFrontier = []
+      for (const scene of frontier) {
+         let adjacent = getAdjacentScenes(scene)
+         let sceneName = findLocationInString(scene).scene
+         for (const [gate, toData] of Object.entries(adjacent)) {
+            let addString = `${sceneName} -- ${gate} --> ${toData[0]}\n`
+            if (!createdConnections.includes(addString)) {
+               mainString += addString
+               createdConnections.push([sceneName, toData[0]])
+               newFrontier.push(toData[2])
+               addedNodes.add(sceneName)
+               addedNodes.add(toData[0])
+            }
+         }
+      }
+      frontier = newFrontier
+   }
+
+   if (uncheckedTransitionTable[currentLocationData.scene]) {
+      for (const uncheckedGate of uncheckedTransitionTable[currentLocationData.scene]) {
+         mainString += `${currentLocationData.scene} -- ${uncheckedGate} --> unchecked([unchecked]):::unchecked\n`
+      }
+   }
+
+   for (const node of addedNodes) {
+      let style = styleScene(node)
+      sceneNames += `${style[0]}\n`
+      sceneTypes += style[1] ?? ''
+   }
+
+   data = `flowchart ${settings.mapOrientation ?? 'LR'}\n${mermaidClassDefs}\n\n${mainString}\n${sceneNames}\n${sceneTypes}`
    ipcRenderer.send('update-local-tracker', data)
 }
 
@@ -458,6 +514,7 @@ async function reloadTracker() {
       settings = settingsData
       if (document.readyState === 'complete') {
          updateMainTracker()
+         updateLocalTracker()
       }
    })
 
@@ -476,11 +533,13 @@ window.addEventListener('DOMContentLoaded', () => {
    fs.watchFile(trackerDataPath, { interval: 500 }, async (curr, prev) => {
       loadHelper()
       updateMainTracker()
+      updateLocalTracker()
       // update local and nearest
    })
 
    fs.watchFile(trackerDataPMPath, { interval: 500 }, async (curr, prev) => {
       loadVariables()
+      updateLocalTracker()
       //update local and nearest
    })
 
@@ -491,8 +550,8 @@ window.addEventListener('DOMContentLoaded', () => {
    fs.watchFile(modLogPath, { interval: 500 }, async (curr, prev) => {
       if (await updateLocation()) {
          updateMainTracker()
-         //update local and nearest
          updateLocalTracker()
+         //update local and nearest
       }
    })
 

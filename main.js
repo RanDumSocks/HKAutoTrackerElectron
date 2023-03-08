@@ -4,6 +4,8 @@ const settings        = require('./helper/settings')
 const path            = require('path')
 const url             = require('url')
 const open            = require('open')
+const fs              = require('fs')
+const extract         = require('extract-zip')
 
 const version = app.getVersion()
 
@@ -227,6 +229,13 @@ var menuTemplate = [
             click: () => {
                open(`https://github.com/RanDumSocks/HKAutoTrackerElectron/releases/tag/v${version}`)
             }
+         },
+         {
+            label: 'Reinstall Companion Mod',
+            click: () => {
+               settings.options.dataLocation = undefined
+               installCompanionMod(true)
+            }
          }
       ],
    },
@@ -257,6 +266,68 @@ function toggleWindow(windowName, url) {
 function sendMessage(windowName, id, data) {
    let windowInstance = windows[windowName].instance
    windowInstance?.webContents.postMessage(id, data)
+}
+
+function installCompanionMod(force = false) {
+   if (!settings.dataLocation || force) {
+      var option = dialog.showMessageBoxSync(windows['main'].instance, {
+         message: `Hollow Knight data file location not set. This is needed to install the companion mod. Enter in the location of your Hollow Knight install (folder containing hollow_knight.exe).`,
+         type: 'question',
+         buttons: ['Select Folder', 'Cancel'],
+         title: `Data Location`,
+         noLink: true
+      })
+      if (option == 0) {
+         var filePath = dialog.showOpenDialogSync(windows['main'].instance, {
+            title: "Hollow Knight data location",
+            properties: ["openDirectory"]
+         })
+         settings.dataLocation = filePath ? filePath[0] : settings.dataLocation
+         installCompanionMod()
+      }
+   } else {
+      if (fs.existsSync(path.join(settings.dataLocation, "hollow_knight_Data/Managed/Mods/HKRoomLogger/HKRoomLogger.dll"))) {
+         var option = dialog.showMessageBoxSync(windows['main'].instance, {
+            message: `Companion mod already installed!`,
+            type: 'question',
+            buttons: ['Okay', 'Manual Install'],
+            title: `Already Installed`,
+            noLink: true
+         })
+         if (option == 1) {
+            open("https://github.com/RanDumSocks/HKRoomLogger/releases/latest")
+         }
+      } else {
+         var option = dialog.showMessageBoxSync(windows['main'].instance, {
+            message: `Would you like to install the companion mod now?`,
+            type: 'question',
+            buttons: ['Yes', 'Manual Install', 'No'],
+            noLink: true
+         })
+         if (option == 0) {
+            extract('./HKRoomLogger.zip', { dir : path.join(settings.dataLocation, "hollow_knight_Data/Managed/Mods/HKRoomLogger")})
+            .then( () => {
+               dialog.showMessageBoxSync(windows['main'].instance, {
+                  message: `Mod successfully installed! Remember to restart Hollow Knight for changes to take effects.`,
+                  type: 'info',
+                  noLink: true
+               })
+            }).catch(() => {
+               var option = dialog.showMessageBoxSync(windows['main'].instance, {
+                  message: `Something went wrong! Please contact the developer for help, or install the mod manually.`,
+                  type: 'question',
+                  buttons: ['Okay :(', 'Manual Install'],
+                  noLink: true
+               })
+               if (option == 1) {
+                  open("https://github.com/RanDumSocks/HKRoomLogger/releases/latest")
+               }
+            })
+         } else if (option == 1) {
+            open("https://github.com/RanDumSocks/HKRoomLogger/releases/latest")
+         }
+      }
+   }
 }
 
 { // auto updater
@@ -311,6 +382,10 @@ app.whenReady().then(() => {
    ipcMain.on('update-nearest-tracker', (e, data) => {sendMessage('nearest', 'updateGraph', data)})
    ipcMain.on('msg', (e, msg) => { console.log(msg) })
    ipcMain.handle('is-window-open', (e, windowName) => { return windows[windowName].instance != undefined })
+
+   if (!settings.dataLocation || !fs.existsSync(path.join(settings.dataLocation, "hollow_knight_Data/Managed/Mods/HKRoomLogger/HKRoomLogger.dll"))) {
+      installCompanionMod()
+   }
 
    mainWin.on('closed', () => {
       app.quit()

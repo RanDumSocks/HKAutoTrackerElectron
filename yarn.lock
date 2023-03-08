@@ -1431,7 +1431,7 @@ extract-zip@^1.0.3:
     mkdirp "^0.5.4"
     yauzl "^2.10.0"
 
-extract-zip@^2.0.0:
+extract-zip@^2.0.0, extract-zip@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/extract-zip/-/extract-zip-2.0.1.tgz#663dca56fe46df890d5f131ef4a06d22bb8ba13a"
   integrity sha512-GDhU9ntwuKyGXdZBUgTIe+vXnWj0fppUEtMDL0+idd5Sta8TGpHssn/eusA9mrPr9qNDym6SxAYZjNvCn/9RBg==
@@ -2395,11 +2395,6 @@ responselike@^1.0.2:
   integrity sha1-kYcg7ztjHFZCvgaPFa3lpG9Loec=
   dependencies:
     lowercase-keys "^1.0.0"
-
-reverse-line-reader@^0.2.6:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/reverse-line-reader/-/reverse-line-reader-0.2.6.tgz#1e98d88eac9bd156c5d4dbf33636a827ac1a7a3e"
-  integrity sha1-HpjYjqyb0VbF1NvzNjaoJ6waej4=
 
 rimraf@^3.0.0:
   version "3.0.2"

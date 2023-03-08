@@ -14,8 +14,22 @@ module.exports = {
       mapOrientation: 'LR',
       benchPathfinding: true,
       lastVersion: undefined,
+      dataLocation: undefined
    },
    options: {},
+
+   get dataLocation() {
+      return this.options.dataLocation
+   },
+
+   set dataLocation(value) {
+      if (isRenderer) { throw 'Cannot change setting values in renderer' }
+      if (fs.existsSync(value) && fs.existsSync(path.join(value, "hollow_knight.exe"))) {
+         this.options.dataLocation = value
+      } else {
+         console.log(`Invalid file path ${value}`)
+      }
+   },
 
    get translationType() {
       return this.options.translationType

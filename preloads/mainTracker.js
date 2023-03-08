@@ -1,6 +1,5 @@
 const path            = require('path')
 const fs              = require('fs')
-const rLineReader     = require('reverse-line-reader')
 const { ipcRenderer } = require('electron')
 const common          = require('./../helper/commonjs.js') 
 
@@ -9,7 +8,7 @@ const rootPath                 = path.resolve(process.env.APPDATA, '../LocalLow/
 const trackerDataPath          = path.resolve(rootPath, 'Randomizer 4/Recent/TrackerData.json')
 const trackerDataPMPath        = path.resolve(rootPath, 'Randomizer 4/Recent/TrackerDataPM.txt')
 const modSettingsPath          = path.resolve(rootPath, 'Randomizer 4/Recent/settings.txt')
-const modLogPath               = path.resolve(rootPath, 'ModLog.txt')
+const roomLoggerPath           = path.resolve(rootPath, 'RoomLogger.json')
 const spoilerLogPath           = path.resolve(rootPath, 'Randomizer 4/Recent/RawSpoiler.json')
 const transitionDictionaryPath = path.resolve(__dirname, '../resources/mapDict.json')
 var   saveFilePath             = undefined                                                                   // Location of the user's modded save file, can change
@@ -379,26 +378,16 @@ function updateBenches() {
  * Updates currentLocation
  * @param {string} manualLocation scene to manually set as location
  */
-async function updateLocation(manualLocation) {
+async function updateLocation() {
    var locationChanged = false
 
-   if (manualLocation && manualLocation != currentLocation) {
-      lastLocation    = currentLocation?.replace(/\[.*/gm, "")
-      currentLocation = manualLocation
-      locationChanged = true
-   } else {
-      await rLineReader.eachLine(modLogPath, (line, last) => {
-         let location = line.match(/(?<=\[INFO\]:\[Hkmp\.Game\.Client\.ClientManager\] Scene changed from ).*(?=\n|$)/gm)?.[0].match(/\b(\w+)($|\s*$)/)?.[0]
-
-         if (location) {
-            if (location != findLocationInString(currentLocation).scene) {
-               lastLocation = currentLocation?.replace(/\[.*/gm, "")
-               currentLocation = location
-               locationChanged = true
-            }
-            return false
-         }
-      })
+   if (fs.existsSync(roomLoggerPath)) {
+      var locData = JSON.parse(fs.readFileSync(roomLoggerPath))
+      if (lastLocation != locData.last || currentLocation != locData.current) {
+         lastLocation = locData.last
+         currentLocation = locData.current
+         locationChanged = true
+      }
    }
 
    if (checkedTransitionTable[currentLocation] && locationChanged) {
@@ -572,12 +561,11 @@ window.addEventListener('DOMContentLoaded', () => {
       reloadTracker()
    })
 
-   fs.watchFile(modLogPath, { interval: 500 }, async (curr, prev) => {
-      if (await updateLocation()) {
-         updateMainTracker()
-         updateLocalTracker()
-         //update local and nearest
-      }
+   fs.watchFile(roomLoggerPath, { interval: 500 }, async (curr, prev) => {
+      updateLocation()
+      updateMainTracker()
+      updateLocalTracker()
+      //update local and nearest
    })
 
    /* Should fire when modSettingsPath changes

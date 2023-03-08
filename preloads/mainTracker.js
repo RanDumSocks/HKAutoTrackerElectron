@@ -564,20 +564,23 @@ async function updateNearestTracker() {
       transition: undefined
    }
 
-   checkNodes = new Set()
-   checkNames = ''
-   checkTypes = ''
-   checkString = ''
+   var checkNodes = new Set()
+   var checkNames = ''
+   var checkTypes = ''
+   var checkString = ''
 
-   transitionNodes = new Set()
-   transitionNames = ''
-   transitionTypes = ''
-   transitionString = ''
+   var transitionNodes = new Set()
+   var transitionNames = ''
+   var transitionTypes = ''
+   var transitionString = ''
 
-   var checkPath = getPathTo([currentLocation], Object.keys(sceneUncheckedItemTable))
+   var searchStart = [currentLocation]
+   if (settings.benchPathfinding) { searchStart = searchStart.concat(activeBenches) }
+
+   var checkPath = getPathTo(searchStart, Object.keys(sceneUncheckedItemTable))
    if (checkPath) {
       for (var i = 0; i < checkPath.length - 1; i += 2) {
-         var fromScene = findLocationInString(checkPath[i]).scene
+         var fromScene = findLocationInString(checkPath[i + 1]).scene
          var fromDoor = findLocationInString(checkPath[i + 1]).gate
          var toScene = findLocationInString(checkPath[i + 2]).scene
          checkString += `${fromScene} -- ${fromDoor} --> ${toScene}\n`
@@ -594,7 +597,7 @@ async function updateNearestTracker() {
    }
 
    var extraTPath = []
-   var transitionPath = getPathTo([currentLocation], undefined, (e) => {
+   var transitionPath = getPathTo(searchStart, undefined, (e) => {
       var found = false
       if (uncheckedTransitionTable[e[0]]) {
          for (const uncheckedGate of uncheckedTransitionTable[e[0]]) {
@@ -607,7 +610,7 @@ async function updateNearestTracker() {
    })
    if (transitionPath) {
       for (var i = 0; i < transitionPath.length - 1; i += 2) {
-         var fromScene = findLocationInString(transitionPath[i]).scene
+         var fromScene = findLocationInString(transitionPath[i + 1]).scene
          var fromDoor = findLocationInString(transitionPath[i + 1]).gate
          var toScene = findLocationInString(transitionPath[i + 2]).scene
          transitionString += `${fromScene} -- ${fromDoor} --> ${toScene}\n`

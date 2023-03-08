@@ -167,7 +167,7 @@ var menuTemplate = [
                },
             ],
          },
-         /*{
+         {
             label: 'sep',
             type: 'separator',
          },
@@ -179,7 +179,7 @@ var menuTemplate = [
                settings.benchPathfinding = !settings.benchPathfinding
             },
             checked: settings.benchPathfinding,
-         },*/
+         },
       ],
    },
    {

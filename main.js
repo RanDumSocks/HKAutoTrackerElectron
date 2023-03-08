@@ -334,11 +334,16 @@ function installCompanionMod(force = false) {
 
    autoUpdater.on('error', (err) => {
       console.error(err)
+      dialog.showMessageBoxSync(windows['main'].instance, {
+         message: err.message,
+         type: 'error',
+         noLink: true
+      })
    })
 
    autoUpdater.on('update-downloaded', (info) => {
       sendWin('update-downloaded', info)
-      var option = dialog.showMessageBoxSync(winMain, {
+      var option = dialog.showMessageBoxSync(windows['main'].instance, {
          message: `${info.releaseName}\n\nNew update downloaded, would you like to restart and update now?`,
          type: 'question',
          buttons: ['Yes', 'No'],
@@ -365,15 +370,15 @@ app.whenReady().then(() => {
    sendMessage('main', 'version', version)
    sendMessage('main', 'setting-change', settings.options)
 
-   if (!process.defaultApp) {
-      autoUpdater.checkForUpdates()
-   }
-
    if (process.defaultApp) {
+      console.log('defaultApp')
       menuTemplate.push({
          label: 'Dev Tools',
          role: 'toggleDevTools',
       })
+   } else {
+      console.log("checking for updates")
+      autoUpdater.checkForUpdates()
    }
 
    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))

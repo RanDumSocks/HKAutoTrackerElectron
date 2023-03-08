@@ -342,7 +342,6 @@ function installCompanionMod(force = false) {
    })
 
    autoUpdater.on('update-downloaded', (info) => {
-      sendWin('update-downloaded', info)
       var option = dialog.showMessageBoxSync(windows['main'].instance, {
          message: `${info.releaseName}\n\nNew update downloaded, would you like to restart and update now?`,
          type: 'question',
@@ -358,10 +357,6 @@ function installCompanionMod(force = false) {
          click: () => { autoUpdater.quitAndInstall() }
       })
       Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
-   })
-
-   autoUpdater.on('update-available', () => {
-      sendWin('Update found, downloading in background...')
    })
 }
 

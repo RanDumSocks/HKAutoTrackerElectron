@@ -32,11 +32,13 @@ Upon running the program, the software will automatically download and install l
 	- Change layout of the map
 	- Room name translation options
 - Shows which rooms have reachable unchecked transitions and item checks
-- Local map view (must have [HKMP](https://github.com/Extremelyd1/HKMP) installed)
+- Local map view (must have [companion mod](https://github.com/RanDumSocks/HKRoomLogger) installed)
 	- Shows your current room, and immediate reachable transitions, displaying what door leads to what adjacent room
-- ~~Nearest Locations Tracker (must have [HKMP](https://github.com/Extremelyd1/HKMP) installed)~~
+- ~~Nearest Locations Tracker (must have [companion mod](https://github.com/RanDumSocks/HKRoomLogger) installed)~~
 	- ~~Searches for the nearest unchecked transition and item check and displays the shortest path to get there from current position. Utilizes logic parsing to determine only possible paths according to randomiser logic.~~
    - **WILL BE ADDED SOON**
+
+The program will attempt to install the companion mod itself with your help and permission.
 
 ## Usage
 There are ~~3~~ 2 windows in this program, the first window to load is the main window (HKAT), and that is the window where all the tracking computation is. Closing this window will close any other opened windows.

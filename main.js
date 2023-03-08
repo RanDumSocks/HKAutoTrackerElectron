@@ -194,7 +194,7 @@ var menuTemplate = [
                sendMessage('main', 'update-local')
             },
          },
-         /*{
+         {
             label: 'Nearest Tracker',
             type: 'checkbox',
             id: 'nearestTracker',
@@ -202,7 +202,7 @@ var menuTemplate = [
                toggleWindow('nearest')
                sendMessage('main', 'update-nearest')
             },
-         },*/
+         },
          {
             label: 'sep',
             type: 'separator',
@@ -383,8 +383,8 @@ app.whenReady().then(() => {
 
    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
 
-   ipcMain.on('update-local-tracker', (e, data) => {sendMessage('local', 'updateGraph', data)})
-   ipcMain.on('update-nearest-tracker', (e, data) => {sendMessage('nearest', 'updateGraph', data)})
+   ipcMain.on('update-local-tracker', (e, data, isComplete) => {sendMessage('local', 'updateGraph', [data, isComplete])})
+   ipcMain.on('update-nearest-tracker', (e, data, isComplete) => {sendMessage('nearest', 'updateGraph', [data, isComplete])})
    ipcMain.on('msg', (e, msg) => { console.log(msg) })
    ipcMain.handle('is-window-open', (e, windowName) => { return windows[windowName].instance != undefined })
 

@@ -105,7 +105,7 @@ const defaultTransitionTable = {
    var saveVariables            = {}         // randomiser logic variables (varName: value)
    var checkedTransitionTable   = {}         // fromScene: { fromGate: ['toScene', 'toGate'] }
    var uncheckedTransitionTable = {}         // scene: [gate]
-   var sceneItemTable           = {}         // scene: [itemID]
+   var sceneUncheckedItemTable  = {}         // scene: [itemID]
    var currentLocation          = undefined  // Guessed scene or gate player is in
    var lastLocation             = undefined
    var targetScene              = undefined  // Manually set target scene
@@ -188,7 +188,7 @@ function loadHelper() {
 
    checkedTransitionTable   = {}
    uncheckedTransitionTable = {}
-   sceneItemTable           = {}
+   sceneUncheckedItemTable  = {}
 
    trackerData = JSON.parse(fs.readFileSync(trackerDataPath))
 
@@ -214,10 +214,10 @@ function loadHelper() {
    }
 
    for (const item of trackerData.uncheckedReachableLocations) {
-      if (sceneItemTable[itemLocations[item]]) {
-         sceneItemTable[itemLocations[item]].push(item)
+      if (sceneUncheckedItemTable[itemLocations[item]]) {
+         sceneUncheckedItemTable[itemLocations[item]].push(item)
       } else {
-         sceneItemTable[itemLocations[item]] = [item]
+         sceneUncheckedItemTable[itemLocations[item]] = [item]
       }
    }
 }
@@ -232,7 +232,9 @@ function loadHelper() {
  * @returns {boolean} 
  */
 function evalLogic(modLogicName, knownVars) {
+   console.log(modLogicName, knownVars)
    var parsedString = modLogic[modLogicName]
+   console.log(parsedString)
    var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'), "g")
 
    parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
@@ -253,9 +255,10 @@ function evalLogic(modLogicName, knownVars) {
          }
       }
    }
+   console.log(parsedString)
 
    { // Variable parsing
-      let variables = parsedString.match(/[a-zA-Z0-9_'\[\]]+/g)
+      let variables = parsedString.match(/[a-zA-Z0-9_\-'\[\]]+/g)
       if (variables) {
          for (const variable of variables) {
             if (gateNames.has(variable)) {
@@ -268,6 +271,8 @@ function evalLogic(modLogicName, knownVars) {
          }
       }
    }
+
+   console.log(parsedString)
 
    return eval(parsedString)
 }
@@ -301,19 +306,63 @@ function getAdjacentScenes(sceneName) {
    var location = findLocationInString(sceneName)
    var adjacent = {}
    
-   if (location.gate) {
-      for (const [fromGate, [toScene, toGate]] of Object.entries(checkedTransitionTable[location.scene])) {
-         if (evalLogic(`${location.scene}[${fromGate}]`, [location.found])) {
+   if (checkedTransitionTable[location.scene]) {
+      if (location.gate) {
+         for (const [fromGate, [toScene, toGate]] of Object.entries(checkedTransitionTable[location.scene])) {
+            if (evalLogic(`${location.scene}[${fromGate}]`, [location.found])) {
+               adjacent[fromGate] = [toScene, toGate, `${toScene}[${toGate}]`]
+            }
+         }
+      } else if (location.scene) {
+         for (const [fromGate, [toScene, toGate]] of Object.entries(checkedTransitionTable[location.scene])) {
             adjacent[fromGate] = [toScene, toGate, `${toScene}[${toGate}]`]
          }
-      }
-   } else if (location.scene) {
-      for (const [fromGate, [toScene, toGate]] of Object.entries(checkedTransitionTable[location.scene])) {
-         adjacent[fromGate] = [toScene, toGate, `${toScene}[${toGate}]`]
       }
    }
 
    return adjacent
+}
+
+function getPathTo(fromScenes, targetScenes, customFilter) {
+   var frontier = [...fromScenes]
+   var sceneMap = [] // [ [ fromName, toName ] ]
+   var pathMap = []
+   var foundScene = undefined
+   var completedBacktrack = false
+   
+   while (frontier.length > 0 && !foundScene) {
+      var prev = frontier.pop()
+      var prevData = findLocationInString(prev)
+      var adj = getAdjacentScenes(prev)
+      for (const [fromDoor, adjSceneData] of Object.entries(adj)) {
+         var fromName = `${prevData.scene}[${fromDoor}]`
+         if (sceneMap.some( (e) => {return (e[1] == fromName && e[2] == adjSceneData[2])}))  { continue }
+         if (sceneMap.some( (e) => {return (e[2] == fromName && e[1] == adjSceneData[2])}))  { continue }
+
+         foundScene = (customFilter ? customFilter(adjSceneData) : targetScenes.includes(adjSceneData[0])) ? adjSceneData[2] : undefined
+         sceneMap.push([prevData.gate, fromName, adjSceneData[2], prev])
+
+         if (foundScene) {
+            break
+         } else {
+            frontier.push(adjSceneData[2])
+         }
+      }
+   }
+
+   if (!foundScene) { return undefined }
+
+   pathMap.unshift(foundScene)
+   while (!completedBacktrack) {
+      var prevRoom = sceneMap.find((e) => e[2] == pathMap[0])
+      pathMap.unshift(prevRoom[1])
+      pathMap.unshift(`${findLocationInString(prevRoom[1]).scene}[${prevRoom[0]}]`)
+      if (fromScenes.includes(prevRoom[3])) {
+         completedBacktrack = true
+      }
+   }
+
+   return pathMap
 }
 
 // TODO styleRoom
@@ -326,7 +375,7 @@ function getAdjacentScenes(sceneName) {
 function styleScene(sceneName) {
    var name            = ""
    var classStyle      = ""
-   var itemCheckNumber = sceneItemTable[sceneName] ? ` [${sceneItemTable[sceneName].length}]` : ""
+   var itemCheckNumber = sceneUncheckedItemTable[sceneName] ? ` [${sceneUncheckedItemTable[sceneName].length}]` : ""
    var translationData = transitionTranslation[sceneName]
    var fullName        = translationData?.[0]
    var type            = translationData?.[1]
@@ -359,7 +408,7 @@ function styleScene(sceneName) {
    if (uncheckedTransitionTable[sceneName]) {
       classStyle += `${sceneName}:::transition\n`
    }
-   if (sceneItemTable[sceneName]) {
+   if (sceneUncheckedItemTable[sceneName]) {
       classStyle += `${sceneName}:::check\n`
    }
 
@@ -371,7 +420,6 @@ function updateBenches() {
    for (const benchID of Object.keys(saveVariables).filter( (e) => e.match(/^Bench\-/))) {
       activeBenches.push(findLocationInString(modLogic[benchID]).scene)
    }
-   console.log(activeBenches)
 }
 
 /**
@@ -448,6 +496,7 @@ function updateMainTracker() {
 
 async function updateLocalTracker() {
    if (!(await ipcRenderer.invoke('is-window-open', 'local'))) { return }
+   if (!currentLocation) { return }
    var data = ''
    var currentLocationData = findLocationInString(currentLocation)
    var frontier = [currentLocationData.found]
@@ -489,8 +538,8 @@ async function updateLocalTracker() {
    }
 
    // unchecked items
-   if (sceneItemTable[currentLocationData.scene]) {
-      for (const item of sceneItemTable[currentLocationData.scene]) {
+   if (sceneUncheckedItemTable[currentLocationData.scene]) {
+      for (const item of sceneUncheckedItemTable[currentLocationData.scene]) {
          if (!currentLocationData.gate || evalLogic(item, [currentLocationData.found])) {
             mainString += `${currentLocationData.scene} --> ${item}(${item}):::uncheckeditem\n`
          }
@@ -504,7 +553,80 @@ async function updateLocalTracker() {
    }
 
    data = `flowchart ${settings.mapOrientation ?? 'LR'}\n${mermaidClassDefs}\n\n${mainString}\n${sceneNames}\n${sceneTypes}`
-   ipcRenderer.send('update-local-tracker', data)
+   ipcRenderer.send('update-local-tracker', data, findLocationInString(currentLocation).gate != undefined)
+}
+
+async function updateNearestTracker() {
+   if (!(await ipcRenderer.invoke('is-window-open', 'nearest'))) { return }
+   if (!currentLocation) { return }
+   var data = {
+      check: undefined,
+      transition: undefined
+   }
+
+   checkNodes = new Set()
+   checkNames = ''
+   checkTypes = ''
+   checkString = ''
+
+   transitionNodes = new Set()
+   transitionNames = ''
+   transitionTypes = ''
+   transitionString = ''
+
+   var checkPath = getPathTo([currentLocation], Object.keys(sceneUncheckedItemTable))
+   if (checkPath) {
+      for (var i = 0; i < checkPath.length - 1; i += 2) {
+         var fromScene = findLocationInString(checkPath[i]).scene
+         var fromDoor = findLocationInString(checkPath[i + 1]).gate
+         var toScene = findLocationInString(checkPath[i + 2]).scene
+         checkString += `${fromScene} -- ${fromDoor} --> ${toScene}\n`
+         checkNodes.add(fromScene)
+         checkNodes.add(toScene)
+      }
+
+      for (const node of checkNodes) {
+         let style = styleScene(node)
+         checkNames += `${style[0]}\n`
+         checkTypes += style[1] ?? ''
+      }
+
+   }
+
+   var extraTPath = []
+   var transitionPath = getPathTo([currentLocation], undefined, (e) => {
+      var found = false
+      if (uncheckedTransitionTable[e[0]]) {
+         for (const uncheckedGate of uncheckedTransitionTable[e[0]]) {
+            var uncheckedFullName = `${e[0]}[${uncheckedGate}]`
+            found = evalLogic(uncheckedFullName, [e[2]])
+            extraTPath = [e[0], uncheckedGate]
+         }
+      }
+      return found
+   })
+   if (transitionPath) {
+      for (var i = 0; i < transitionPath.length - 1; i += 2) {
+         var fromScene = findLocationInString(transitionPath[i]).scene
+         var fromDoor = findLocationInString(transitionPath[i + 1]).gate
+         var toScene = findLocationInString(transitionPath[i + 2]).scene
+         transitionString += `${fromScene} -- ${fromDoor} --> ${toScene}\n`
+         transitionNodes.add(fromScene)
+         transitionNodes.add(toScene)
+      }
+      transitionString += `${extraTPath[0]} -- ${extraTPath[1]} --> unchecked([unchecked]):::unchecked\n`
+
+      for (const node of transitionNodes) {
+         let style = styleScene(node)
+         transitionNames += `${style[0]}\n`
+         transitionTypes += style[1] ?? ''
+      }
+   }
+
+   data.check = `flowchart LR\n${mermaidClassDefs}\n\n${checkString}\n${checkNames}\n${checkTypes}`
+   data.transition = `flowchart LR\n${mermaidClassDefs}\n\n${transitionString}\n${transitionNames}\n${transitionTypes}`
+
+   ipcRenderer.send('update-nearest-tracker', data, findLocationInString(currentLocation).gate != undefined)
 }
 
 async function reloadTracker() {
@@ -514,6 +636,7 @@ async function reloadTracker() {
    await updateLocation()
    updateMainTracker()
    updateLocalTracker()
+   updateNearestTracker()
    return true
 }
 
@@ -529,6 +652,7 @@ async function reloadTracker() {
       if (document.readyState === 'complete') {
          updateMainTracker()
          updateLocalTracker()
+         updateNearestTracker()
       }
    })
 
@@ -539,6 +663,10 @@ async function reloadTracker() {
    ipcRenderer.on('update-local', async (e) => {
       updateLocalTracker()
    })
+
+   ipcRenderer.on('update-nearest', async (e) => {
+      updateNearestTracker()
+   })
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -548,13 +676,13 @@ window.addEventListener('DOMContentLoaded', () => {
       loadHelper()
       updateMainTracker()
       updateLocalTracker()
-      // update local and nearest
+      updateNearestTracker()
    })
 
    fs.watchFile(trackerDataPMPath, { interval: 500 }, async (curr, prev) => {
       loadVariables()
       updateLocalTracker()
-      //update local and nearest
+      updateNearestTracker()
    })
 
    fs.watchFile(modSettingsPath, { interval: 500 }, async (curr, prev) => {
@@ -565,7 +693,7 @@ window.addEventListener('DOMContentLoaded', () => {
       updateLocation()
       updateMainTracker()
       updateLocalTracker()
-      //update local and nearest
+      updateNearestTracker()
    })
 
    /* Should fire when modSettingsPath changes

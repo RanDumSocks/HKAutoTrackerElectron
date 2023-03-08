@@ -2,7 +2,7 @@ const { ipcRenderer } = require('electron')
 const common          = require('./../helper/commonjs.js') 
 
 window.addEventListener('DOMContentLoaded', () => {
-   document.title = "Local Tracker"
+   document.title = "Nearest Tracker"
 })
 
 var isReady = new Promise( (resolve) => {
@@ -16,15 +16,17 @@ var isReady = new Promise( (resolve) => {
 })
 
 ipcRenderer.on('updateGraph', async (e, data) => {
+   console.log("recieved update")
    await isReady
 
    if (data[1]) {
-      document.title = "Local Tracker"
+      document.title = "Nearest Tracker"
    } else {
-      document.title = "Local Tracker*"
+      document.title = "Nearest Tracker*"
    }
 
-   console.log("recieved update")
-   let graph = document.getElementById('mermaidGraph')
-   graph.innerHTML = data[0]
+   console.log("recieved update2")
+   document.getElementById('mermaidGraphTransition').innerHTML = data[0].transition
+   document.getElementById('mermaidGraphCheck').innerHTML = data[0].check
+   console.log("recieved update3")
 })

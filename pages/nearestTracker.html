@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html id="main">
+   <head>
+      <meta charset="UTF-8" />
+      <script src="./../lib/mermaid.min.js"></script>
+      <script src="./../helper/movement.js"></script>
+      <link rel="stylesheet" href="./../helper/graph.css" />
+      <script>
+         mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            flowchart: {
+               curve: 'basis',
+               nodeSpacing: 25,
+               rankSpacing: 75,
+            },
+            securityLevel:'loose',
+         })
+
+         const updateGraphs = (data) => {
+            var prevScroll = { x: window.scrollX, y: window.scrollY }
+
+            try {
+               mermaid.mermaidAPI.render('mermaidOutSVGTransition', document.getElementById('mermaidGraphTransition').innerText, (svgCode, bindFunction) => {
+                  document.getElementById('mermaidOutTransition').innerHTML = svgCode
+                  var svg = document.getElementById('mermaidOutSVGTransition')
+                  svg.style.width = getComputedStyle(svg).maxWidth
+               })
+               mermaid.mermaidAPI.render('mermaidOutSVGCheck', document.getElementById('mermaidGraphCheck').innerText, (svgCode, bindFunction) => {
+                  document.getElementById('mermaidOutCheck').innerHTML = svgCode
+                  var svg = document.getElementById('mermaidOutSVGCheck')
+                  svg.style.width = getComputedStyle(svg).maxWidth
+               })
+            } catch (err) {
+               console.log(err)
+            }
+            window.scrollTo(prevScroll.x, prevScroll.y)
+         }
+
+         window.addEventListener('DOMContentLoaded', () => {
+            updateGraphs()
+            var observer = new MutationObserver((mutationsList, observer) => {
+               updateGraphs()
+            })
+            observer.observe(document.getElementById('mermaidGraphTransition'), { attributes: true, childList: true, subtree: true })
+            observer.observe(document.getElementById('mermaidGraphCheck'), { attributes: true, childList: true, subtree: true })
+         })
+      </script>
+   </head>
+   <body>
+      <div id="nTransition">
+         <h2>Nearest Transition</h2>
+         <div class="mermaidGraph" id="mermaidGraphTransition"></div>
+         <div id="mermaidOutTransition"></div>
+      </div>
+      <div id="nCheck">
+         <h2>Nearest Check</h2>
+         <div class="mermaidGraph" id="mermaidGraphCheck"></div>
+         <div id="mermaidOutCheck"></div>
+      </div>
+   </body>
+</html>

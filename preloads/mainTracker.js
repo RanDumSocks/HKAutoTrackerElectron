@@ -232,9 +232,7 @@ function loadHelper() {
  * @returns {boolean} 
  */
 function evalLogic(modLogicName, knownVars) {
-   console.log(modLogicName, knownVars)
    var parsedString = modLogic[modLogicName]
-   console.log(parsedString)
    var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'), "g")
 
    parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
@@ -255,7 +253,6 @@ function evalLogic(modLogicName, knownVars) {
          }
       }
    }
-   console.log(parsedString)
 
    { // Variable parsing
       let variables = parsedString.match(/[a-zA-Z0-9_\-'\[\]]+/g)
@@ -271,8 +268,6 @@ function evalLogic(modLogicName, knownVars) {
          }
       }
    }
-
-   console.log(parsedString)
 
    return eval(parsedString)
 }
@@ -325,39 +320,50 @@ function getAdjacentScenes(sceneName) {
 
 function getPathTo(fromScenes, targetScenes, customFilter) {
    var frontier = [...fromScenes]
-   var sceneMap = [] // [ [ fromName, toName ] ]
+   var sceneMap = [] // [ { fromGate, fromName, toName, fromRaw } ]
    var pathMap = []
    var foundScene = undefined
    var completedBacktrack = false
    
    while (frontier.length > 0 && !foundScene) {
-      var prev = frontier.pop()
-      var prevData = findLocationInString(prev)
-      var adj = getAdjacentScenes(prev)
+      var from = frontier.pop()
+      var fromData = findLocationInString(from)
+      var adj = getAdjacentScenes(from)
       for (const [fromDoor, adjSceneData] of Object.entries(adj)) {
-         var fromName = `${prevData.scene}[${fromDoor}]`
-         if (sceneMap.some( (e) => {return (e[1] == fromName && e[2] == adjSceneData[2])}))  { continue }
-         if (sceneMap.some( (e) => {return (e[2] == fromName && e[1] == adjSceneData[2])}))  { continue }
+         var fromName = `${fromData.scene}[${fromDoor}]`
+         var toName = adjSceneData[2]
+         var toScene = adjSceneData[0]
+         if (sceneMap.some( (e) => {return (e.fromName == fromName && e.toName == toName)}))  { continue }
+         if (sceneMap.some( (e) => {return (e.toName == fromName && e.fromName == toName)}))  { continue }
 
-         foundScene = (customFilter ? customFilter(adjSceneData) : targetScenes.includes(adjSceneData[0])) ? adjSceneData[2] : undefined
-         sceneMap.push([prevData.gate, fromName, adjSceneData[2], prev])
+         foundScene = (customFilter ? customFilter(adjSceneData) : targetScenes.includes(toScene)) ? toName : undefined
+         sceneMap.push({
+            fromPrevGate: fromData.gate,
+            fromName:fromName,
+            toName: toName,
+            fromRaw: from
+         })
 
          if (foundScene) {
             break
          } else {
-            frontier.push(adjSceneData[2])
+            frontier.push(toName)
          }
       }
    }
 
    if (!foundScene) { return undefined }
 
+   console.log(sceneMap)
    pathMap.unshift(foundScene)
+   console.log(pathMap)
+   console.log(fromScenes)
    while (!completedBacktrack) {
-      var prevRoom = sceneMap.find((e) => e[2] == pathMap[0])
-      pathMap.unshift(prevRoom[1])
-      pathMap.unshift(`${findLocationInString(prevRoom[1]).scene}[${prevRoom[0]}]`)
-      if (fromScenes.includes(prevRoom[3])) {
+      var prevRoom = sceneMap.find((e) => e.toName == pathMap[0])
+      console.log(prevRoom)
+      pathMap.unshift(prevRoom.fromName)
+      pathMap.unshift(`${findLocationInString(prevRoom.fromName).scene}[${prevRoom.fromPrevGate}]`)
+      if (fromScenes.includes(prevRoom.fromRaw)) {
          completedBacktrack = true
       }
    }

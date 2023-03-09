@@ -356,11 +356,6 @@ function getPathTo(fromScenes, targetScenes, customFilter) {
       return findLocationInString(e).scene == findLocationInString(foundScene).scene
    })
 
-   console.log(foundScene)
-   console.log(fromScenes)
-   console.log(targetScenes)
-   console.log(sceneMap)
-
    pathMap.unshift(foundScene)
    if (!noPath) {
       while (!completedBacktrack) {
@@ -620,7 +615,7 @@ async function updateNearestTracker() {
          for (const uncheckedGate of uncheckedTransitionTable[e.scene]) {
             var uncheckedFullName = `${e.scene}[${uncheckedGate}]`
             found = evalLogic(uncheckedFullName, [e.found])
-            extraTPath = [e.scene, uncheckedGate]
+            extraTPath.push([e.scene, uncheckedGate])
          }
       }
       return found
@@ -634,8 +629,11 @@ async function updateNearestTracker() {
          transitionNodes.add(fromScene)
          transitionNodes.add(toScene)
       }
-      transitionString += `${extraTPath[0]} -- ${extraTPath[1]} --> unchecked([unchecked]):::unchecked\n`
-      transitionNodes.add(extraTPath[0])
+
+      for (const uncheckedPath of extraTPath) {
+         transitionString += `${uncheckedPath[0]} -- ${uncheckedPath[1]} --> unchecked([unchecked]):::unchecked\n`
+         transitionNodes.add(uncheckedPath[0])
+      }
 
       for (const node of transitionNodes) {
          let style = styleScene(node)

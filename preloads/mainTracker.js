@@ -324,9 +324,10 @@ function getPathTo(fromScenes, targetScenes, customFilter) {
    var pathMap = []
    var foundScene = undefined
    var completedBacktrack = false
+   var noPath = false
    
    while (frontier.length > 0 && !foundScene) {
-      var from = frontier.pop()
+      var from = frontier.shift()
       var fromData = findLocationInString(from)
 
       foundScene = (customFilter ? customFilter(fromData) : targetScenes.includes(fromData.scene)) ? from : undefined
@@ -351,9 +352,17 @@ function getPathTo(fromScenes, targetScenes, customFilter) {
    }
 
    if (!foundScene) { return undefined }
+   noPath = fromScenes.some( (e) => {
+      return findLocationInString(e).scene == findLocationInString(foundScene).scene
+   })
+
+   console.log(foundScene)
+   console.log(fromScenes)
+   console.log(targetScenes)
+   console.log(sceneMap)
 
    pathMap.unshift(foundScene)
-   if (sceneMap.length != 0) {
+   if (!noPath) {
       while (!completedBacktrack) {
          var prevRoom = sceneMap.find((e) => e.toName == pathMap[0])
          pathMap.unshift(prevRoom.fromName)

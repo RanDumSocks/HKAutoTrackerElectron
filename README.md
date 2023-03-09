@@ -36,6 +36,7 @@ Upon running the program, the software will automatically download and install l
 	- Shows your current room, and immediate reachable transitions, displaying what door leads to what adjacent room
 - Nearest Locations Tracker (must have [companion mod](https://github.com/RanDumSocks/HKRoomLogger) installed)
 	- Searches for the nearest unchecked transition and item check and displays the shortest path to get there from current position. Utilizes logic parsing to determine only possible paths.
+   - Note: there may be some problems with adjacent possible tansitions, as certain doors are permanently unlocked after passage, which is untracked in the randomiser logic in a meaningful way.
 
 The program will attempt to install the companion mod itself with your help and permission.
 

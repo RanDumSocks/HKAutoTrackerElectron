@@ -240,6 +240,12 @@ var menuTemplate = [
          }
       ],
    },
+   {
+      label: 'Donate',
+      click: () => {
+         open("https://www.paypal.com/donate/?business=5DRWDFEJEAPUS&no_recurring=1&item_name=Developing+free+software+and+games+for+fun.&currency_code=USD")
+      },
+   },
 ]
 
 function toggleWindow(windowName, url) {

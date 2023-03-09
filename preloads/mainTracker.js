@@ -328,15 +328,17 @@ function getPathTo(fromScenes, targetScenes, customFilter) {
    while (frontier.length > 0 && !foundScene) {
       var from = frontier.pop()
       var fromData = findLocationInString(from)
+
+      foundScene = (customFilter ? customFilter(fromData) : targetScenes.includes(fromData.scene)) ? from : undefined
+      if (foundScene) break;
+
       var adj = getAdjacentScenes(from)
       for (const [fromDoor, adjSceneData] of Object.entries(adj)) {
          var fromName = `${fromData.scene}[${fromDoor}]`
          var toName = adjSceneData[2]
-         var toScene = adjSceneData[0]
          if (sceneMap.some( (e) => {return (e.fromName == fromName && e.toName == toName)}))  { continue }
          if (sceneMap.some( (e) => {return (e.toName == fromName && e.fromName == toName)}))  { continue }
 
-         foundScene = (customFilter ? customFilter(adjSceneData) : targetScenes.includes(toScene)) ? toName : undefined
          sceneMap.push({
             fromPrevGate: fromData.gate,
             fromName:fromName,
@@ -344,27 +346,21 @@ function getPathTo(fromScenes, targetScenes, customFilter) {
             fromRaw: from
          })
 
-         if (foundScene) {
-            break
-         } else {
-            frontier.push(toName)
-         }
+         frontier.push(toName)
       }
    }
 
    if (!foundScene) { return undefined }
 
-   console.log(sceneMap)
    pathMap.unshift(foundScene)
-   console.log(pathMap)
-   console.log(fromScenes)
-   while (!completedBacktrack) {
-      var prevRoom = sceneMap.find((e) => e.toName == pathMap[0])
-      console.log(prevRoom)
-      pathMap.unshift(prevRoom.fromName)
-      pathMap.unshift(`${findLocationInString(prevRoom.fromName).scene}[${prevRoom.fromPrevGate}]`)
-      if (fromScenes.includes(prevRoom.fromRaw)) {
-         completedBacktrack = true
+   if (sceneMap.length != 0) {
+      while (!completedBacktrack) {
+         var prevRoom = sceneMap.find((e) => e.toName == pathMap[0])
+         pathMap.unshift(prevRoom.fromName)
+         pathMap.unshift(`${findLocationInString(prevRoom.fromName).scene}[${prevRoom.fromPrevGate}]`)
+         if (fromScenes.includes(prevRoom.fromRaw)) {
+            completedBacktrack = true
+         }
       }
    }
 
@@ -585,13 +581,19 @@ async function updateNearestTracker() {
 
    var checkPath = getPathTo(searchStart, Object.keys(sceneUncheckedItemTable))
    if (checkPath) {
-      for (var i = 0; i < checkPath.length - 1; i += 2) {
-         var fromScene = findLocationInString(checkPath[i + 1]).scene
-         var fromDoor = findLocationInString(checkPath[i + 1]).gate
-         var toScene = findLocationInString(checkPath[i + 2]).scene
-         checkString += `${fromScene} -- ${fromDoor} --> ${toScene}\n`
-         checkNodes.add(fromScene)
-         checkNodes.add(toScene)
+      if (checkPath.length > 1) {
+         for (var i = 0; i < checkPath.length - 1; i += 2) {
+            var fromScene = findLocationInString(checkPath[i + 1]).scene
+            var fromDoor = findLocationInString(checkPath[i + 1]).gate
+            var toScene = findLocationInString(checkPath[i + 2]).scene
+            checkString += `${fromScene} -- ${fromDoor} --> ${toScene}\n`
+            checkNodes.add(fromScene)
+            checkNodes.add(toScene)
+         }
+      } else {
+         var scene = findLocationInString(checkPath[0])
+         checkString += `${scene.scene}\n`
+         checkNodes.add(scene.scene)
       }
 
       for (const node of checkNodes) {
@@ -605,11 +607,11 @@ async function updateNearestTracker() {
    var extraTPath = []
    var transitionPath = getPathTo(searchStart, undefined, (e) => {
       var found = false
-      if (uncheckedTransitionTable[e[0]]) {
-         for (const uncheckedGate of uncheckedTransitionTable[e[0]]) {
-            var uncheckedFullName = `${e[0]}[${uncheckedGate}]`
-            found = evalLogic(uncheckedFullName, [e[2]])
-            extraTPath = [e[0], uncheckedGate]
+      if (uncheckedTransitionTable[e.scene]) {
+         for (const uncheckedGate of uncheckedTransitionTable[e.scene]) {
+            var uncheckedFullName = `${e.scene}[${uncheckedGate}]`
+            found = evalLogic(uncheckedFullName, [e.found])
+            extraTPath = [e.scene, uncheckedGate]
          }
       }
       return found
@@ -624,6 +626,7 @@ async function updateNearestTracker() {
          transitionNodes.add(toScene)
       }
       transitionString += `${extraTPath[0]} -- ${extraTPath[1]} --> unchecked([unchecked]):::unchecked\n`
+      transitionNodes.add(extraTPath[0])
 
       for (const node of transitionNodes) {
          let style = styleScene(node)

@@ -177,6 +177,7 @@ var menuTemplate = [
             id: 'benchPathfinding',
             click: () => {
                settings.benchPathfinding = !settings.benchPathfinding
+               sendMessage('main', 'setting-change', settings.options)
             },
             checked: settings.benchPathfinding,
          },

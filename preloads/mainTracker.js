@@ -255,7 +255,7 @@ function evalLogic(modLogicName, knownVars) {
    }
 
    { // Variable parsing
-      let variables = parsedString.match(/[a-zA-Z0-9_\-'\[\]]+/g)
+      let variables = parsedString.match(/[a-zA-Z0-9_\-\$'\[\]]+/g)
       if (variables) {
          for (const variable of variables) {
             if (gateNames.has(variable)) {

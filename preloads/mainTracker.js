@@ -231,7 +231,7 @@ function loadHelper() {
  * @param {Array[string] | RegExp} knownVars known variables or regular expression of assumed true variables
  * @returns {boolean} 
  */
-function evalLogic(modLogicName, knownVars) {
+function evalLogic(modLogicName, knownVars, falseVars) {
    var parsedString = modLogic[modLogicName]
    var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'), "g")
 
@@ -239,6 +239,12 @@ function evalLogic(modLogicName, knownVars) {
    parsedString = parsedString.replaceAll("+", "&&")
    parsedString = parsedString.replaceAll("|", "||")
    parsedString = parsedString.replaceAll(/\$[^\s^\)^\()]*/gm, 'false')
+
+   if (falseVars) {
+      for (const fVar of falseVars) {
+         parsedString = parsedString.replaceAll(fVar, "false")
+      }
+   }
    //parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false") // FIXME may be uneeded, testing required
 
    // TODO check if some conditionals compare 2 variables and not always a variable and a constant
@@ -264,8 +270,13 @@ function evalLogic(modLogicName, knownVars) {
                parsedString = parsedString.replace(variable, 'false')
             } else if (sceneNames.has(variable)) {
                parsedString = parsedString.replace(variable, evalLogic(variable, r_known).toString())
-            } else if (variable != 'true') {
+            } else if (saveVariables[variable]) {
                parsedString = parsedString.replace(variable, (saveVariables[variable] > 0).toString())
+            } else if (modLogic[variable]) {
+               var fal = falseVars ? [...falseVars] : []
+               parsedString = parsedString.replace(variable, evalLogic(variable, r_known, fal.push(variable)).toString())
+            } else {
+               parsedString = parsedString.replace(variable, 'false')
             }
          }
       }

@@ -261,7 +261,6 @@ function evalLogic(modLogicName, knownVars, falseVars) {
       }
    }
 
-
    { // Variable parsing
       let variables = parsedString.match(/[a-zA-Z0-9_\-'\[\]]+/g)
       if (variables) {
@@ -274,8 +273,9 @@ function evalLogic(modLogicName, knownVars, falseVars) {
                parsedString = parsedString.replace(variable, (saveVariables[variable] > 0).toString())
             } else if (modLogic[variable]) {
                var fal = falseVars ? [...falseVars] : []
-               parsedString = parsedString.replace(variable, evalLogic(variable, r_known, fal.push(variable)).toString())
-            } else {
+               fal.push(variable)
+               parsedString = parsedString.replace(variable, evalLogic(variable, r_known, fal).toString())
+            } else if (variable != 'true'){
                parsedString = parsedString.replace(variable, 'false')
             }
          }

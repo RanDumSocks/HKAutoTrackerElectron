@@ -238,6 +238,7 @@ function evalLogic(modLogicName, knownVars) {
    parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
    parsedString = parsedString.replaceAll("+", "&&")
    parsedString = parsedString.replaceAll("|", "||")
+   parsedString = parsedString.replaceAll(/\$[^\s^\)^\()]*/gm, 'false')
    //parsedString = parsedString.replaceAll(/[a-zA-Z0-9_]+\[[a-zA-Z0-9_]+\]/g, "false") // FIXME may be uneeded, testing required
 
    // TODO check if some conditionals compare 2 variables and not always a variable and a constant
@@ -254,8 +255,9 @@ function evalLogic(modLogicName, knownVars) {
       }
    }
 
+
    { // Variable parsing
-      let variables = parsedString.match(/[a-zA-Z0-9_\-\$'\[\]]+/g)
+      let variables = parsedString.match(/[a-zA-Z0-9_\-'\[\]]+/g)
       if (variables) {
          for (const variable of variables) {
             if (gateNames.has(variable)) {
@@ -583,7 +585,13 @@ async function updateNearestTracker() {
    var searchStart = [currentLocation]
    if (settings.benchPathfinding) { searchStart = searchStart.concat(activeBenches) }
 
-   var checkPath = getPathTo(searchStart, Object.keys(sceneUncheckedItemTable))
+   var checkPath = getPathTo(searchStart, undefined, (checkData) => {
+      var items = sceneUncheckedItemTable[checkData.scene]
+      return items?.some( (item) => {
+         console.log(item, checkData)
+         return evalLogic(item, [checkData.found])
+      })
+   })
    if (checkPath) {
       if (checkPath.length > 1) {
          for (var i = 0; i < checkPath.length - 1; i += 2) {
@@ -615,7 +623,7 @@ async function updateNearestTracker() {
          for (const uncheckedGate of uncheckedTransitionTable[e.scene]) {
             var uncheckedFullName = `${e.scene}[${uncheckedGate}]`
             found = evalLogic(uncheckedFullName, [e.found])
-            extraTPath.push([e.scene, uncheckedGate])
+            extraTPath = [e.scene, uncheckedGate]
          }
       }
       return found
@@ -630,10 +638,8 @@ async function updateNearestTracker() {
          transitionNodes.add(toScene)
       }
 
-      for (const uncheckedPath of extraTPath) {
-         transitionString += `${uncheckedPath[0]} -- ${uncheckedPath[1]} --> unchecked([unchecked]):::unchecked\n`
-         transitionNodes.add(uncheckedPath[0])
-      }
+      transitionString += `${extraTPath[0]} -- ${extraTPath[1]} --> unchecked([unchecked]):::unchecked\n`
+      transitionNodes.add(extraTPath[0])
 
       for (const node of transitionNodes) {
          let style = styleScene(node)

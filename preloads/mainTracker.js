@@ -233,6 +233,7 @@ function loadHelper() {
  */
 function evalLogic(modLogicName, knownVars, falseVars) {
    var parsedString = modLogic[modLogicName]
+   console.log(modLogicName, falseVars, parsedString)
    var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'), "g")
 
    parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
@@ -268,7 +269,7 @@ function evalLogic(modLogicName, knownVars, falseVars) {
             if (gateNames.has(variable)) {
                parsedString = parsedString.replace(variable, 'false')
             } else if (sceneNames.has(variable)) {
-               parsedString = parsedString.replace(variable, evalLogic(variable, r_known).toString())
+               parsedString = parsedString.replace(variable, evalLogic(variable, r_known, falseVars).toString())
             } else if (saveVariables[variable]) {
                parsedString = parsedString.replace(variable, (saveVariables[variable] > 0).toString())
             } else if (modLogic[variable]) {

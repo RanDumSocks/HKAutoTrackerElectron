@@ -233,7 +233,6 @@ function loadHelper() {
  */
 function evalLogic(modLogicName, knownVars, falseVars) {
    var parsedString = modLogic[modLogicName]
-   console.log(modLogicName, falseVars, parsedString)
    var r_known      = knownVars instanceof RegExp ? knownVars : new RegExp(knownVars.join('|').replaceAll('[', '\\[').replaceAll(']', '\\]'), "g")
 
    parsedString = knownVars != '' ? parsedString.replaceAll(r_known, "true") : parsedString
@@ -255,7 +254,7 @@ function evalLogic(modLogicName, knownVars, falseVars) {
          for (const conditional of conditionals) {
             let r_conditionalData = /[a-zA-Z_]+/
             let dataValue         = saveVariables[conditional.match(r_conditionalData)[0]]
-            let newConditional    = conditional.replace(r_conditionalData, dataValue.toString()).replace('=', '==')
+            let newConditional    = dataValue ? conditional.replace(r_conditionalData, dataValue.toString()).replace('=', '==') : "false"
 
             parsedString = parsedString.replace(conditional, `(${newConditional})`)
          }
@@ -437,6 +436,7 @@ function styleScene(sceneName) {
 }
 
 function updateBenches() {
+   // TODO: update bench logic to include door
    for (const benchID of Object.keys(saveVariables).filter( (e) => e.match(/^Bench\-/))) {
       activeBenches.push(findLocationInString(modLogic[benchID]).scene)
    }
